@@ -36,7 +36,7 @@ class MonthNotifier extends StateNotifier<MonthUiState> {
   final Ref ref;
   late DateTime _currentMonth;
 
-  MonthNotifier(this.ref) : super(const MonthUiState()) {
+  MonthNotifier(this.ref) : super(MonthUiState()) {
     final now = DateTime.now();
     _currentMonth = DateTime(now.year, now.month, 1);
     _load();

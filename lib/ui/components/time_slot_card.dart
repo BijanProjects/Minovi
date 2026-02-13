@@ -74,11 +74,11 @@ class _TimeSlotCardState extends State<TimeSlotCard>
           color: Colors.transparent,
           child: InkWell(
             onTap: widget.onTap,
-            borderRadius: BorderRadius.circular(Radius.lg),
+            borderRadius: BorderRadius.circular(AppRadius.lg),
             child: Ink(
               decoration: BoxDecoration(
                 color: theme.cardTheme.color ?? cs.surface,
-                borderRadius: BorderRadius.circular(Radius.lg),
+                borderRadius: BorderRadius.circular(AppRadius.lg),
                 border: Border.all(
                   color: cs.outlineVariant,
                   width: 1,
@@ -95,8 +95,8 @@ class _TimeSlotCardState extends State<TimeSlotCard>
                       decoration: BoxDecoration(
                         color: moodColor,
                         borderRadius: const BorderRadius.only(
-                          topLeft: Radius.circular(Radius.lg),
-                          bottomLeft: Radius.circular(Radius.lg),
+                          topLeft: Radius.circular(AppRadius.lg),
+                          bottomLeft: Radius.circular(AppRadius.lg),
                         ),
                       ),
                     ),
@@ -179,7 +179,7 @@ class _TimeSlotCardState extends State<TimeSlotCard>
               ),
               decoration: BoxDecoration(
                 color: Color(tag.colorHex).withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(Radius.pill),
+                borderRadius: BorderRadius.circular(AppRadius.pill),
               ),
               child: Text(
                 '${tag.icon} ${tag.label}',
@@ -197,7 +197,7 @@ class _TimeSlotCardState extends State<TimeSlotCard>
             ),
             decoration: BoxDecoration(
               color: cs.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(Radius.pill),
+              borderRadius: BorderRadius.circular(AppRadius.pill),
             ),
             child: Text(
               '+$overflow',

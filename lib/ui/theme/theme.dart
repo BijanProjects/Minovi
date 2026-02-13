@@ -6,7 +6,7 @@ import 'package:chronosense/ui/theme/typography.dart';
 abstract final class ChronoTheme {
   // ── Light ──
   static ThemeData light() {
-    final colorScheme = const ColorScheme(
+    const colorScheme = ColorScheme(
       brightness: Brightness.light,
       primary: ChronoColors.indigo500,
       onPrimary: ChronoColors.slate50,
@@ -104,7 +104,7 @@ abstract final class ChronoTheme {
 
   // ── Dark ──
   static ThemeData dark() {
-    final colorScheme = const ColorScheme(
+    const colorScheme = ColorScheme(
       brightness: Brightness.dark,
       primary: ChronoColors.indigo400,
       onPrimary: ChronoColors.indigo900,

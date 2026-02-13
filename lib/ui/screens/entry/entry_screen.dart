@@ -227,7 +227,7 @@ class _EntryScreenState extends ConsumerState<EntryScreen>
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(Radius.xl)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
       ),
       builder: (context) => Padding(
         padding: const EdgeInsets.all(Spacing.xxl),
@@ -267,7 +267,7 @@ class _EntryScreenState extends ConsumerState<EntryScreen>
                     style: OutlinedButton.styleFrom(
                       minimumSize: const Size(0, 48),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(Radius.md),
+                        borderRadius: BorderRadius.circular(AppRadius.md),
                       ),
                     ),
                     child: const Text('Cancel'),
@@ -284,7 +284,7 @@ class _EntryScreenState extends ConsumerState<EntryScreen>
                       backgroundColor: cs.error,
                       minimumSize: const Size(0, 48),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(Radius.md),
+                        borderRadius: BorderRadius.circular(AppRadius.md),
                       ),
                     ),
                     child: const Text('Delete'),

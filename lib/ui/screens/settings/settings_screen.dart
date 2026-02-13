@@ -144,7 +144,7 @@ class SettingsScreen extends ConsumerWidget {
               padding: const EdgeInsets.all(Spacing.lg),
               decoration: BoxDecoration(
                 color: theme.cardTheme.color ?? cs.surface,
-                borderRadius: BorderRadius.circular(Radius.lg),
+                borderRadius: BorderRadius.circular(AppRadius.lg),
                 border: Border.all(color: cs.outlineVariant),
               ),
               child: Row(
@@ -195,7 +195,7 @@ class SettingsScreen extends ConsumerWidget {
               padding: const EdgeInsets.all(Spacing.xl),
               decoration: BoxDecoration(
                 color: theme.cardTheme.color ?? cs.surface,
-                borderRadius: BorderRadius.circular(Radius.lg),
+                borderRadius: BorderRadius.circular(AppRadius.lg),
                 border: Border.all(color: cs.outlineVariant),
               ),
               child: Column(
@@ -263,12 +263,12 @@ class _TimeCard extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(Radius.lg),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         child: Ink(
           padding: const EdgeInsets.all(Spacing.lg),
           decoration: BoxDecoration(
             color: theme.cardTheme.color ?? cs.surface,
-            borderRadius: BorderRadius.circular(Radius.lg),
+            borderRadius: BorderRadius.circular(AppRadius.lg),
             border: Border.all(color: cs.outlineVariant),
           ),
           child: Row(

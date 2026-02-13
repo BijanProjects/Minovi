@@ -116,7 +116,7 @@ class _MoodButtonState extends State<_MoodButton>
             color: widget.isSelected
                 ? moodColor.withValues(alpha: 0.12)
                 : Colors.transparent,
-            borderRadius: BorderRadius.circular(Radius.lg),
+            borderRadius: BorderRadius.circular(AppRadius.lg),
             border: Border.all(
               color: widget.isSelected ? moodColor : cs.outlineVariant,
               width: widget.isSelected ? 2 : 1,

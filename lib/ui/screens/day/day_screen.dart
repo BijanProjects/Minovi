@@ -143,7 +143,7 @@ class _DayScreenState extends ConsumerState<DayScreen> {
               duration: const Duration(milliseconds: 800),
               curve: Curves.easeOutCubic,
               builder: (context, value, _) => ClipRRect(
-                borderRadius: BorderRadius.circular(Radius.pill),
+                borderRadius: BorderRadius.circular(AppRadius.pill),
                 child: LinearProgressIndicator(
                   value: value,
                   minHeight: 4,

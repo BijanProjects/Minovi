@@ -260,7 +260,7 @@ class _SummaryCard extends StatelessWidget {
       padding: const EdgeInsets.all(Spacing.lg),
       decoration: BoxDecoration(
         color: cs.primaryContainer.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(Radius.lg),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
       ),
       child: Row(
         children: [
@@ -349,7 +349,7 @@ class _MoodDistribution extends StatelessWidget {
             ),
             decoration: BoxDecoration(
               color: Color(entry.key.colorHex).withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(Radius.md),
+              borderRadius: BorderRadius.circular(AppRadius.md),
             ),
             child: Column(
               children: [
@@ -426,7 +426,7 @@ class _ActivityChart extends StatelessWidget {
                         height: 24,
                         decoration: BoxDecoration(
                           color: cs.surfaceContainerHighest,
-                          borderRadius: BorderRadius.circular(Radius.sm),
+                          borderRadius: BorderRadius.circular(AppRadius.sm),
                         ),
                       ),
                       FractionallySizedBox(
@@ -435,7 +435,7 @@ class _ActivityChart extends StatelessWidget {
                           height: 24,
                           decoration: BoxDecoration(
                             color: tagColor.withValues(alpha: 0.3),
-                            borderRadius: BorderRadius.circular(Radius.sm),
+                            borderRadius: BorderRadius.circular(AppRadius.sm),
                           ),
                           alignment: Alignment.centerRight,
                           padding: const EdgeInsets.only(right: Spacing.sm),

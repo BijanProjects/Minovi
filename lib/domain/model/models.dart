@@ -1,4 +1,4 @@
-/// All domain models for ChronoSense.
+// All domain models for ChronoSense.
 
 // ─── Mood ───────────────────────────────────────────────────────────
 enum Mood {

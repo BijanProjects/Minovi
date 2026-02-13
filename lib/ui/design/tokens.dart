@@ -1,4 +1,4 @@
-/// Design token classes — spacing, radius, elevation.
+// Design token classes — spacing, radius, elevation.
 
 abstract final class Spacing {
   static const double xxs  = 2;
@@ -12,7 +12,7 @@ abstract final class Spacing {
   static const double huge = 48;
 }
 
-abstract final class Radius {
+abstract final class AppRadius {
   static const double sm   = 8;
   static const double md   = 12;
   static const double lg   = 16;
