@@ -215,14 +215,52 @@ class SettingsScreen extends ConsumerWidget {
                 color: theme.cardTheme.color ?? cs.surface,
                 borderRadius: BorderRadius.circular(AppRadius.lg),
                 border: Border.all(color: cs.outlineVariant),
+                boxShadow: [
+                  BoxShadow(
+                    color: cs.primary.withOpacity(0.08),
+                    blurRadius: 24,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
               ),
               child: Column(
                 children: [
+                  // App Icon in God Mode
+                  Container(
+                    width: 72,
+                    height: 72,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: LinearGradient(
+                        colors: [cs.primary, cs.primaryContainer],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: cs.primary.withOpacity(0.18),
+                          blurRadius: 16,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: ClipOval(
+                        child: Image.asset(
+                          'assets/icon/app_icon.png',
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: Spacing.md),
                   Text(
                     'Minovi',
-                    style: theme.textTheme.titleMedium?.copyWith(
+                    style: theme.textTheme.headlineSmall?.copyWith(
                       color: cs.primary,
                       fontWeight: FontWeight.bold,
+                      letterSpacing: 1.2,
                     ),
                   ),
                   const SizedBox(height: Spacing.xs),

@@ -118,45 +118,107 @@ class _MonthScreenState extends ConsumerState<MonthScreen>
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
 
-    return GestureDetector(
-      onHorizontalDragUpdate: _onDragUpdate,
-      onHorizontalDragEnd: _onDragEnd,
-      behavior: HitTestBehavior.translucent,
-      child: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final w = constraints.maxWidth;
-            return ClipRect(
-              child: Stack(
-                children: [
-                  // Previous month
-                  if (state.prevMonth != null)
-                    _positioned(
-                      offset: _dragOffset - w,
-                      width: w,
-                      child: _buildMonthPanel(
-                          state.prevMonth!, theme, cs),
-                    ),
-                  // Current month
-                  _positioned(
-                    offset: _dragOffset,
-                    width: w,
-                    child: _buildMonthPanel(
-                        state, theme, cs, isCenter: true),
+    return SafeArea(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── App Header (fixed) ──
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              Spacing.xl, Spacing.lg, Spacing.xl, Spacing.sm,
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(AppRadius.sm),
+                    boxShadow: [
+                      BoxShadow(
+                        color: cs.primary.withValues(alpha: 0.15),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
-                  // Next month
-                  if (state.nextMonth != null)
-                    _positioned(
-                      offset: _dragOffset + w,
-                      width: w,
-                      child: _buildMonthPanel(
-                          state.nextMonth!, theme, cs),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(AppRadius.sm),
+                    child: Image.asset(
+                      'assets/icon/app_icon.png',
+                      fit: BoxFit.cover,
                     ),
-                ],
+                  ),
+                ),
+                const SizedBox(width: Spacing.md),
+                Text(
+                  'Minovi',
+                  style: theme.textTheme.headlineLarge?.copyWith(
+                    color: cs.primary,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // ── Monthly Overview Header (fixed) ──
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              Spacing.xl, Spacing.md, Spacing.xl, Spacing.xl,
+            ),
+            child: Text(
+              'Monthly Overview',
+              style: theme.textTheme.headlineLarge?.copyWith(
+                color: cs.primary,
+                fontWeight: FontWeight.bold,
               ),
-            );
-          },
-        ),
+            ),
+          ),
+
+          // ── Swipeable 3-panel viewport ──
+          Expanded(
+            child: GestureDetector(
+              onHorizontalDragUpdate: _onDragUpdate,
+              onHorizontalDragEnd: _onDragEnd,
+              behavior: HitTestBehavior.translucent,
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final w = constraints.maxWidth;
+                  return ClipRect(
+                    child: Stack(
+                      children: [
+                        // Previous month
+                        if (state.prevMonth != null)
+                          _positioned(
+                            offset: _dragOffset - w,
+                            width: w,
+                            child: _buildMonthPanel(
+                                state.prevMonth!, theme, cs, showHeader: false),
+                          ),
+                        // Current month
+                        _positioned(
+                          offset: _dragOffset,
+                          width: w,
+                          child: _buildMonthPanel(
+                              state, theme, cs, isCenter: true, showHeader: false),
+                        ),
+                        // Next month
+                        if (state.nextMonth != null)
+                          _positioned(
+                            offset: _dragOffset + w,
+                            width: w,
+                            child: _buildMonthPanel(
+                                state.nextMonth!, theme, cs, showHeader: false),
+                          ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -180,6 +242,7 @@ class _MonthScreenState extends ConsumerState<MonthScreen>
     ThemeData theme,
     ColorScheme cs, {
     bool isCenter = false,
+    bool showHeader = true,
   }) {
     if (monthState.isLoading) {
       return const Center(child: CircularProgressIndicator());
@@ -191,17 +254,17 @@ class _MonthScreenState extends ConsumerState<MonthScreen>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: Spacing.lg),
-
-          // ── Header ──
-          Text(
-            'Monthly Overview',
-            style: theme.textTheme.headlineLarge?.copyWith(
-              color: cs.primary,
-              fontWeight: FontWeight.bold,
+          if (showHeader) ...[
+            // ── Header ──
+            Text(
+              'Monthly Overview',
+              style: theme.textTheme.headlineLarge?.copyWith(
+                color: cs.primary,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-          ),
-          const SizedBox(height: Spacing.xl),
-
+            const SizedBox(height: Spacing.xl),
+          ],
           // ── Month navigation ──
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,

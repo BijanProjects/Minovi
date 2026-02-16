@@ -128,8 +128,8 @@ class DayNotifier extends StateNotifier<DayUiState> {
     );
   }
 
-  Future<void> _load() async {
-    state = state.copyWith(isLoading: true);
+  Future<void> _load({bool showLoading = true}) async {
+    if (showLoading) state = state.copyWith(isLoading: true);
 
     final prefsRepo = ref.read(preferencesRepositoryProvider);
     final journalRepo = ref.read(journalRepositoryProvider);
@@ -177,7 +177,7 @@ class DayNotifier extends StateNotifier<DayUiState> {
     if (adjacent != null) {
       state = adjacent;
     }
-    _load();
+    _load(showLoading: false);
   }
 
   void previousDay() {

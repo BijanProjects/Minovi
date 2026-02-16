@@ -122,11 +122,15 @@ class _DayScreenState extends ConsumerState<DayScreen>
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (_scrollController.hasClients) {
           final target = state.activeSlotIndex * 88.0;
-          _scrollController.animateTo(
-            target.clamp(0.0, _scrollController.position.maxScrollExtent),
-            duration: const Duration(milliseconds: 600),
-            curve: Curves.easeOutCubic,
-          );
+          final clampedTarget = target.clamp(0.0, _scrollController.position.maxScrollExtent);
+          final current = _scrollController.offset;
+          if ((current - clampedTarget).abs() > 2) {
+            _scrollController.animateTo(
+              clampedTarget,
+              duration: const Duration(milliseconds: 600),
+              curve: Curves.easeOutCubic,
+            );
+          }
         }
       });
     }
