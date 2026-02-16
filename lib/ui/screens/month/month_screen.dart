@@ -4,19 +4,121 @@ import 'package:chronosense/domain/model/models.dart';
 import 'package:chronosense/ui/screens/month/month_provider.dart';
 import 'package:chronosense/ui/design/tokens.dart';
 
-class MonthScreen extends ConsumerWidget {
+class MonthScreen extends ConsumerStatefulWidget {
   final void Function(DateTime date)? onDayTap;
 
   const MonthScreen({super.key, this.onDayTap});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(monthProvider);
+  ConsumerState<MonthScreen> createState() => _MonthScreenState();
+}
+
+class _MonthScreenState extends ConsumerState<MonthScreen>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _settleController;
+  double _dragOffset = 0;
+  bool _isAnimating = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _settleController = AnimationController(vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _settleController.dispose();
+    super.dispose();
+  }
+
+  /// Smoothly animate [_dragOffset] from [from] to [to].
+  Future<void> _animateOffset(double from, double to,
+      {Curve curve = Curves.easeOutCubic}) async {
+    final screenW = MediaQuery.of(context).size.width;
+    final distance = (to - from).abs();
+    final ms = (300 * distance / screenW).clamp(100, 350).toInt();
+    _settleController.duration = Duration(milliseconds: ms);
+
+    final anim = Tween<double>(begin: from, end: to).animate(
+      CurvedAnimation(parent: _settleController, curve: curve),
+    );
+    void listener() => setState(() => _dragOffset = anim.value);
+    _settleController.addListener(listener);
+    _settleController.reset();
+    await _settleController.forward();
+    _settleController.removeListener(listener);
+    _dragOffset = to;
+  }
+
+  /// Arrow-button navigation (full slide out → change → slide in).
+  Future<void> _swipeNavigate({required bool forward}) async {
+    if (_isAnimating) return;
+    _isAnimating = true;
+
+    final screenW = MediaQuery.of(context).size.width;
     final notifier = ref.read(monthProvider.notifier);
+
+    await _animateOffset(0, forward ? -screenW : screenW,
+        curve: Curves.easeInCubic);
+
+    if (forward) {
+      notifier.nextMonth();
+    } else {
+      notifier.previousMonth();
+    }
+
+    setState(() => _dragOffset = forward ? screenW : -screenW);
+    await _animateOffset(_dragOffset, 0);
+
+    _isAnimating = false;
+  }
+
+  /// Called when the user lifts their finger after dragging.
+  void _onDragEnd(DragEndDetails details) async {
+    if (_isAnimating) return;
+    _isAnimating = true;
+
+    final velocity = details.primaryVelocity ?? 0;
+    final screenW = MediaQuery.of(context).size.width;
+    final threshold = screenW * 0.25;
+    final shouldCommit = velocity.abs() > 300 || _dragOffset.abs() > threshold;
+
+    if (shouldCommit) {
+      final forward = velocity.abs() > 300 ? velocity < 0 : _dragOffset < 0;
+      await _animateOffset(_dragOffset, forward ? -screenW : screenW);
+
+      final notifier = ref.read(monthProvider.notifier);
+      if (forward) {
+        notifier.nextMonth();
+      } else {
+        notifier.previousMonth();
+      }
+
+      setState(() => _dragOffset = forward ? screenW : -screenW);
+      await _animateOffset(_dragOffset, 0);
+    } else {
+      await _animateOffset(_dragOffset, 0);
+    }
+
+    _isAnimating = false;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final state = ref.watch(monthProvider);
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
 
-    return SafeArea(
+    return GestureDetector(
+      onHorizontalDragUpdate: _isAnimating
+          ? null
+          : (details) => setState(() => _dragOffset += details.delta.dx),
+      onHorizontalDragEnd: _isAnimating ? null : _onDragEnd,
+      behavior: HitTestBehavior.translucent,
+      child: ClipRect(
+        child: Transform.translate(
+          offset: Offset(_dragOffset, 0),
+          child: SafeArea(
       child: state.isLoading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
@@ -42,7 +144,7 @@ class MonthScreen extends ConsumerWidget {
                     children: [
                       IconButton(
                         icon: const Icon(Icons.chevron_left),
-                        onPressed: notifier.previousMonth,
+                        onPressed: () => _swipeNavigate(forward: false),
                       ),
                       AnimatedSwitcher(
                         duration: const Duration(milliseconds: 200),
@@ -60,7 +162,7 @@ class MonthScreen extends ConsumerWidget {
                       ),
                       IconButton(
                         icon: const Icon(Icons.chevron_right),
-                        onPressed: notifier.nextMonth,
+                        onPressed: () => _swipeNavigate(forward: true),
                       ),
                     ],
                   ),
@@ -70,7 +172,7 @@ class MonthScreen extends ConsumerWidget {
                   _CalendarGrid(
                     month: state.month,
                     daysWithEntries: state.insight?.daysWithEntries ?? {},
-                    onDayTap: onDayTap,
+                    onDayTap: widget.onDayTap,
                   ),
                   const SizedBox(height: Spacing.xxl),
 
@@ -110,6 +212,9 @@ class MonthScreen extends ConsumerWidget {
                 ],
               ),
             ),
+    ),
+    ),
+    ),
     );
   }
 

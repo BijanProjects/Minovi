@@ -14,14 +14,99 @@ class DayScreen extends ConsumerStatefulWidget {
   ConsumerState<DayScreen> createState() => _DayScreenState();
 }
 
-class _DayScreenState extends ConsumerState<DayScreen> {
+class _DayScreenState extends ConsumerState<DayScreen>
+    with SingleTickerProviderStateMixin {
   final ScrollController _scrollController = ScrollController();
   bool _hasAutoScrolled = false;
+  late AnimationController _settleController;
+  double _dragOffset = 0;
+  bool _isAnimating = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _settleController = AnimationController(vsync: this);
+  }
 
   @override
   void dispose() {
+    _settleController.dispose();
     _scrollController.dispose();
     super.dispose();
+  }
+
+  /// Smoothly animate [_dragOffset] from [from] to [to].
+  Future<void> _animateOffset(double from, double to,
+      {Curve curve = Curves.easeOutCubic}) async {
+    final screenW = MediaQuery.of(context).size.width;
+    final distance = (to - from).abs();
+    final ms = (300 * distance / screenW).clamp(100, 350).toInt();
+    _settleController.duration = Duration(milliseconds: ms);
+
+    final anim = Tween<double>(begin: from, end: to).animate(
+      CurvedAnimation(parent: _settleController, curve: curve),
+    );
+    void listener() => setState(() => _dragOffset = anim.value);
+    _settleController.addListener(listener);
+    _settleController.reset();
+    await _settleController.forward();
+    _settleController.removeListener(listener);
+    _dragOffset = to;
+  }
+
+  /// Arrow-button navigation (full slide out → change → slide in).
+  Future<void> _swipeNavigate({required bool forward}) async {
+    if (_isAnimating) return;
+    _isAnimating = true;
+
+    final screenW = MediaQuery.of(context).size.width;
+    final notifier = ref.read(dayProvider.notifier);
+
+    await _animateOffset(0, forward ? -screenW : screenW,
+        curve: Curves.easeInCubic);
+
+    if (forward) {
+      notifier.nextDay();
+    } else {
+      notifier.previousDay();
+    }
+
+    setState(() => _dragOffset = forward ? screenW : -screenW);
+    await _animateOffset(_dragOffset, 0);
+
+    _isAnimating = false;
+    _hasAutoScrolled = false;
+  }
+
+  /// Called when the user lifts their finger after dragging.
+  void _onDragEnd(DragEndDetails details) async {
+    if (_isAnimating) return;
+    _isAnimating = true;
+
+    final velocity = details.primaryVelocity ?? 0;
+    final screenW = MediaQuery.of(context).size.width;
+    final threshold = screenW * 0.25;
+    final shouldCommit = velocity.abs() > 300 || _dragOffset.abs() > threshold;
+
+    if (shouldCommit) {
+      final forward = velocity.abs() > 300 ? velocity < 0 : _dragOffset < 0;
+      await _animateOffset(_dragOffset, forward ? -screenW : screenW);
+
+      final notifier = ref.read(dayProvider.notifier);
+      if (forward) {
+        notifier.nextDay();
+      } else {
+        notifier.previousDay();
+      }
+
+      setState(() => _dragOffset = forward ? screenW : -screenW);
+      await _animateOffset(_dragOffset, 0);
+      _hasAutoScrolled = false;
+    } else {
+      await _animateOffset(_dragOffset, 0);
+    }
+
+    _isAnimating = false;
   }
 
   void _autoScrollToActiveSlot(DayUiState state) {
@@ -43,16 +128,24 @@ class _DayScreenState extends ConsumerState<DayScreen> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(dayProvider);
-    final notifier = ref.read(dayProvider.notifier);
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
 
     _autoScrollToActiveSlot(state);
 
-    return SafeArea(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+    return GestureDetector(
+      onHorizontalDragUpdate: _isAnimating
+          ? null
+          : (details) => setState(() => _dragOffset += details.delta.dx),
+      onHorizontalDragEnd: _isAnimating ? null : _onDragEnd,
+      behavior: HitTestBehavior.translucent,
+      child: ClipRect(
+        child: Transform.translate(
+          offset: Offset(_dragOffset, 0),
+          child: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
           // ── Header ──
           Padding(
             padding: const EdgeInsets.fromLTRB(
@@ -102,7 +195,7 @@ class _DayScreenState extends ConsumerState<DayScreen> {
               children: [
                 IconButton(
                   icon: const Icon(Icons.chevron_left),
-                  onPressed: notifier.previousDay,
+                  onPressed: () => _swipeNavigate(forward: false),
                   style: IconButton.styleFrom(
                     foregroundColor: cs.onSurface,
                   ),
@@ -151,7 +244,7 @@ class _DayScreenState extends ConsumerState<DayScreen> {
                 ),
                 IconButton(
                   icon: const Icon(Icons.chevron_right),
-                  onPressed: notifier.nextDay,
+                  onPressed: () => _swipeNavigate(forward: true),
                   style: IconButton.styleFrom(
                     foregroundColor: cs.onSurface,
                   ),
@@ -218,6 +311,9 @@ class _DayScreenState extends ConsumerState<DayScreen> {
           ),
         ],
       ),
+    ),
+    ),
+    ),
     );
   }
 
