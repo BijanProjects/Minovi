@@ -2,13 +2,16 @@
 
 // ─── Mood ───────────────────────────────────────────────────────────
 enum Mood {
-  energetic(emoji: '🔥', label: 'Energetic', colorHex: 0xFFF59E0B, sortOrder: 0),
-  happy(emoji: '😊', label: 'Happy', colorHex: 0xFF10B981, sortOrder: 1),
-  focused(emoji: '🎯', label: 'Focused', colorHex: 0xFF6366F1, sortOrder: 2),
-  calm(emoji: '😌', label: 'Calm', colorHex: 0xFF14B8A6, sortOrder: 3),
-  neutral(emoji: '😐', label: 'Neutral', colorHex: 0xFF8B5CF6, sortOrder: 4),
-  tired(emoji: '😴', label: 'Tired', colorHex: 0xFF94A3B8, sortOrder: 5),
-  stressed(emoji: '😰', label: 'Stressed', colorHex: 0xFFF43F5E, sortOrder: 6);
+  happy(emoji: '\u{1F60A}', label: 'Happy', colorHex: 0xFF10B981, sortOrder: 0),
+  sad(emoji: '\u{1F622}', label: 'Sad', colorHex: 0xFF6366F1, sortOrder: 1),
+  angry(emoji: '\u{1F621}', label: 'Angry', colorHex: 0xFFEF4444, sortOrder: 2),
+  anxious(emoji: '\u{1F61F}', label: 'Anxious', colorHex: 0xFFF59E0B, sortOrder: 3),
+  ashamed(emoji: '\u{1F614}', label: 'Ashamed', colorHex: 0xFF78716C, sortOrder: 4),
+  calm(emoji: '\u{1F9D8}', label: 'Calm', colorHex: 0xFF14B8A6, sortOrder: 5),
+  neutral(emoji: '\u{1F610}', label: 'Neutral', colorHex: 0xFF8B5CF6, sortOrder: 6),
+  stressed(emoji: '\u{1F624}', label: 'Stressed', colorHex: 0xFFF43F5E, sortOrder: 7),
+  tired(emoji: '\u{1F634}', label: 'Tired', colorHex: 0xFF94A3B8, sortOrder: 8),
+  excited(emoji: '\u{1F929}', label: 'Excited', colorHex: 0xFFEC4899, sortOrder: 9);
 
   final String emoji;
   final String label;
@@ -36,15 +39,14 @@ enum Mood {
 
 // ─── ActivityTag ────────────────────────────────────────────────────
 enum ActivityTag {
-  work(label: 'Work', icon: '💼', colorHex: 0xFF3B82F6),
-  exercise(label: 'Exercise', icon: '🏃', colorHex: 0xFF10B981),
-  social(label: 'Social', icon: '👥', colorHex: 0xFFF59E0B),
+  work(label: 'Work / Study', icon: '💼', colorHex: 0xFF3B82F6),
+  exercise(label: 'Exercise', icon: '💪', colorHex: 0xFF10B981),
+  social(label: 'Social', icon: '🤝', colorHex: 0xFFF59E0B),
   creative(label: 'Creative', icon: '🎨', colorHex: 0xFFA855F7),
-  rest(label: 'Rest', icon: '🛋️', colorHex: 0xFF64748B),
-  learning(label: 'Learning', icon: '📚', colorHex: 0xFF6366F1),
-  commute(label: 'Commute', icon: '🚗', colorHex: 0xFF78716C),
+  rest(label: 'Rest / Sleep', icon: '😴', colorHex: 0xFF64748B),
+  commute(label: 'Errands', icon: '🚗', colorHex: 0xFF78716C),
   meals(label: 'Meals', icon: '🍽️', colorHex: 0xFFEF4444),
-  entertainment(label: 'Entertainment', icon: '🎮', colorHex: 0xFFEC4899),
+  entertainment(label: 'Leisure', icon: '🎮', colorHex: 0xFFEC4899),
   selfCare(label: 'Self-care', icon: '🧘', colorHex: 0xFF14B8A6);
 
   final String label;
@@ -76,7 +78,7 @@ class JournalEntry {
   final String startTime; // "HH:mm"
   final String endTime;   // "HH:mm"
   final String description;
-  final Mood? mood;
+  final List<Mood> moods;
   final List<ActivityTag> tags;
   final int createdAt; // millis
 
@@ -86,13 +88,16 @@ class JournalEntry {
     required this.startTime,
     required this.endTime,
     this.description = '',
-    this.mood,
+    this.moods = const [],
     this.tags = const [],
     required this.createdAt,
   });
 
+  /// Backward-compat: returns first mood or null.
+  Mood? get mood => moods.isNotEmpty ? moods.first : null;
+
   bool get hasContent =>
-      description.isNotEmpty || mood != null || tags.isNotEmpty;
+      description.isNotEmpty || moods.isNotEmpty || tags.isNotEmpty;
 
   int get durationMinutes {
     final startParts = startTime.split(':');
@@ -108,8 +113,7 @@ class JournalEntry {
     String? startTime,
     String? endTime,
     String? description,
-    Mood? mood,
-    bool clearMood = false,
+    List<Mood>? moods,
     List<ActivityTag>? tags,
     int? createdAt,
   }) {
@@ -119,7 +123,7 @@ class JournalEntry {
       startTime: startTime ?? this.startTime,
       endTime: endTime ?? this.endTime,
       description: description ?? this.description,
-      mood: clearMood ? null : (mood ?? this.mood),
+      moods: moods ?? this.moods,
       tags: tags ?? this.tags,
       createdAt: createdAt ?? this.createdAt,
     );
@@ -173,9 +177,8 @@ class DaySummary {
     // Dominant mood
     final moodCounts = <Mood, int>{};
     for (final slot in filled) {
-      if (slot.entry?.mood != null) {
-        moodCounts[slot.entry!.mood!] =
-            (moodCounts[slot.entry!.mood!] ?? 0) + 1;
+      for (final mood in slot.entry?.moods ?? <Mood>[]) {
+        moodCounts[mood] = (moodCounts[mood] ?? 0) + 1;
       }
     }
     Mood? dominant;
@@ -266,8 +269,8 @@ class MonthInsight {
       days.add(day);
       dayEntries[day] = (dayEntries[day] ?? 0) + 1;
 
-      if (entry.mood != null) {
-        moodFreq[entry.mood!] = (moodFreq[entry.mood!] ?? 0) + 1;
+      for (final mood in entry.moods) {
+        moodFreq[mood] = (moodFreq[mood] ?? 0) + 1;
       }
       for (final tag in entry.tags) {
         tagFreq[tag] = (tagFreq[tag] ?? 0) + 1;

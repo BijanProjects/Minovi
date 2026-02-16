@@ -150,7 +150,7 @@ class _EntryScreenState extends ConsumerState<EntryScreen>
                               controller: _descController,
                               onChanged: notifier.updateDescription,
                               maxLines: null,
-                              minLines: 6,
+                              minLines: 3,
                               maxLength: 5000,
                               decoration: InputDecoration(
                                 hintText: 'Describe what you did, how it went, any thoughts...',
@@ -162,15 +162,15 @@ class _EntryScreenState extends ConsumerState<EntryScreen>
                               style: theme.textTheme.bodyLarge,
                             ),
 
-                            const SizedBox(height: Spacing.xxl),
+                            const SizedBox(height: Spacing.xl),
 
                             // Mood
                             MoodSelector(
-                              selected: state.mood,
-                              onChanged: notifier.updateMood,
+                              selected: state.moods,
+                              onChanged: notifier.updateMoods,
                             ),
 
-                            const SizedBox(height: Spacing.xxl),
+                            const SizedBox(height: Spacing.xl),
 
                             // Tags
                             Text(

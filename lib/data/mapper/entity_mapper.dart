@@ -16,13 +16,24 @@ class EntityMapper {
             .cast<ActivityTag>()
             .toList();
 
+    // Parse moods (comma-separated)
+    final moodStr = map['mood'] as String? ?? '';
+    final moods = moodStr.isEmpty
+        ? <Mood>[]
+        : moodStr
+            .split(',')
+            .map((m) => Mood.fromName(m.trim()))
+            .where((m) => m != null)
+            .cast<Mood>()
+            .toList();
+
     return JournalEntry(
       id: map['id'] as int?,
       date: DateTime.parse(map['date'] as String),
       startTime: map['startTime'] as String,
       endTime: map['endTime'] as String,
       description: map['description'] as String? ?? '',
-      mood: Mood.fromName(map['mood'] as String?),
+      moods: moods,
       tags: tags,
       createdAt: map['createdAt'] as int? ?? 0,
     );
@@ -40,7 +51,7 @@ class EntityMapper {
       'startTime': entry.startTime,
       'endTime': entry.endTime,
       'description': entry.description,
-      'mood': entry.mood?.name ?? '',
+      'mood': entry.moods.map((m) => m.name).join(','),
       'tags': entry.tags.map((t) => t.label).join(','),
       'createdAt': entry.createdAt,
     };

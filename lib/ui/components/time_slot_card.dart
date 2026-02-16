@@ -62,8 +62,8 @@ class _TimeSlotCardState extends State<TimeSlotCard>
     final cs = theme.colorScheme;
     final filled = widget.slot.isFilled;
     final entry = widget.slot.entry;
-    final moodColor = entry?.mood != null
-        ? Color(entry!.mood!.colorHex)
+    final moodColor = entry?.moods.isNotEmpty == true
+        ? Color(entry!.moods.first.colorHex)
         : cs.outlineVariant;
 
     return FadeTransition(
@@ -128,13 +128,15 @@ class _TimeSlotCardState extends State<TimeSlotCard>
           ),
         ),
         const SizedBox(height: Spacing.xs),
-        // Mood emoji + description inline
+        // Mood emojis + description inline
         Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            if (entry.mood != null) ...[
-              Text(entry.mood!.emoji,
-                  style: theme.textTheme.titleLarge),
+            if (entry.moods.isNotEmpty) ...[
+              Text(
+                entry.moods.map((m) => m.emoji).join(' '),
+                style: theme.textTheme.titleLarge,
+              ),
               const SizedBox(width: Spacing.sm),
             ],
             Expanded(

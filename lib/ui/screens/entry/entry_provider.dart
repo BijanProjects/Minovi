@@ -7,7 +7,7 @@ class EntryUiState {
   final bool isLoading;
   final JournalEntry? existingEntry;
   final String description;
-  final Mood? mood;
+  final List<Mood> moods;
   final List<ActivityTag> tags;
   final String date;
   final String startTime;
@@ -19,7 +19,7 @@ class EntryUiState {
     this.isLoading = true,
     this.existingEntry,
     this.description = '',
-    this.mood,
+    this.moods = const [],
     this.tags = const [],
     this.date = '',
     this.startTime = '',
@@ -33,8 +33,7 @@ class EntryUiState {
     JournalEntry? existingEntry,
     bool clearExisting = false,
     String? description,
-    Mood? mood,
-    bool clearMood = false,
+    List<Mood>? moods,
     List<ActivityTag>? tags,
     String? date,
     String? startTime,
@@ -46,7 +45,7 @@ class EntryUiState {
       isLoading: isLoading ?? this.isLoading,
       existingEntry: clearExisting ? null : (existingEntry ?? this.existingEntry),
       description: description ?? this.description,
-      mood: clearMood ? null : (mood ?? this.mood),
+      moods: moods ?? this.moods,
       tags: tags ?? this.tags,
       date: date ?? this.date,
       startTime: startTime ?? this.startTime,
@@ -84,8 +83,7 @@ class EntryNotifier extends StateNotifier<EntryUiState> {
         isLoading: false,
         existingEntry: existing,
         description: existing.description,
-        mood: existing.mood,
-        clearMood: existing.mood == null,
+        moods: existing.moods,
         tags: existing.tags,
       );
     } else {
@@ -93,7 +91,7 @@ class EntryNotifier extends StateNotifier<EntryUiState> {
         isLoading: false,
         clearExisting: true,
         description: '',
-        clearMood: true,
+        moods: [],
         tags: [],
       );
     }
@@ -105,12 +103,8 @@ class EntryNotifier extends StateNotifier<EntryUiState> {
     }
   }
 
-  void updateMood(Mood? mood) {
-    if (mood == null) {
-      state = state.copyWith(clearMood: true);
-    } else {
-      state = state.copyWith(mood: mood);
-    }
+  void updateMoods(List<Mood> moods) {
+    state = state.copyWith(moods: moods);
   }
 
   void updateTags(List<ActivityTag> tags) {
@@ -128,7 +122,7 @@ class EntryNotifier extends StateNotifier<EntryUiState> {
       startTime: state.startTime,
       endTime: state.endTime,
       description: state.description.trim(),
-      mood: state.mood,
+      moods: state.moods,
       tags: state.tags,
       createdAt: state.existingEntry?.createdAt ?? now,
     );
