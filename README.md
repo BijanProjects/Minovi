@@ -1,8 +1,8 @@
-# ChronoSense — Flutter
+# Minovi
 
 > Understand your time. Reflect on your hours. Live intentionally.
 
-ChronoSense is a privacy-first, offline time-journaling app that divides your waking hours into customizable intervals and prompts you to reflect on each one.
+Minovi is a privacy-first, offline time-journaling app that divides your waking hours into customizable intervals and prompts you to reflect on each one.
 
 ## Architecture
 
@@ -10,7 +10,7 @@ ChronoSense is a privacy-first, offline time-journaling app that divides your wa
 
 ```
 lib/
-├── core/           # DI providers, IntervalEngine algorithm, ChronoResult type
+├── core/           # DI providers, IntervalEngine algorithm, refresh signal
 ├── data/           # SQLite database, DAOs, mappers, preferences, LRU cache
 ├── domain/         # Models (JournalEntry, Mood, ActivityTag, TimeSlot, etc.)
 ├── notification/   # Local notification scheduling
@@ -25,10 +25,12 @@ lib/
 
 ## Features
 
-- **Day View** — Time slot cards with mood accent bars, staggered animations, auto-scroll
-- **Entry Editor** — Description, 7-mood animated selector, 10-activity tag chips
+- **Day View** — Time slot cards with mood accent bars, staggered animations, auto-scroll to active slot, app icon branding
+- **Entry Editor** — Description, multi-mood animated selector, activity tag chips, upsert with delete support
 - **Month View** — Calendar grid, stats summary, mood distribution, activity bar charts
-- **Settings** — Wake/sleep time pickers, interval selection, notification toggle
+- **Settings** — Wake/sleep time pickers, interval selection, notification toggle, dynamic colors
+- **Smart Interval Changes** — Changing the time interval preserves all previously recorded entries; only unrecorded slots are re-divided
+- **Instant Reactivity** — Cross-screen refresh signal ensures day view, month view, and settings stay in sync without manual reload
 - **Notifications** — Exact alarm scheduling at each interval boundary
 - **Premium Animations** — Fade-through tab transitions, spring-physics mood selector, staggered list reveals, shared-axis entry navigation
 
