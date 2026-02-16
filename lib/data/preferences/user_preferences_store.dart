@@ -13,6 +13,8 @@ class UserPreferencesStore {
   static const _intervalMinutes = 'interval_minutes';
   static const _notificationsEnabled = 'notifications_enabled';
   static const _dynamicColors = 'dynamic_colors';
+  static const _previousIntervalMinutes = 'previous_interval_minutes';
+  static const _intervalChangedAt = 'interval_changed_at';
 
   Future<UserPreferences> load() async {
     final prefs = await SharedPreferences.getInstance();
@@ -24,6 +26,8 @@ class UserPreferencesStore {
       intervalMinutes: prefs.getInt(_intervalMinutes) ?? 120,
       notificationsEnabled: prefs.getBool(_notificationsEnabled) ?? true,
       dynamicColors: prefs.getBool(_dynamicColors) ?? false,
+      previousIntervalMinutes: prefs.getInt(_previousIntervalMinutes),
+      intervalChangedAt: prefs.getString(_intervalChangedAt),
     );
   }
 
@@ -37,6 +41,10 @@ class UserPreferencesStore {
       prefs.setInt(_intervalMinutes, p.intervalMinutes),
       prefs.setBool(_notificationsEnabled, p.notificationsEnabled),
       prefs.setBool(_dynamicColors, p.dynamicColors),
+      if (p.previousIntervalMinutes != null)
+        prefs.setInt(_previousIntervalMinutes, p.previousIntervalMinutes!),
+      if (p.intervalChangedAt != null)
+        prefs.setString(_intervalChangedAt, p.intervalChangedAt!),
     ]);
   }
 }

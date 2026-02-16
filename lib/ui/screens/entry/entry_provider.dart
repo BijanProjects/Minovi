@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:chronosense/core/di/providers.dart';
+import 'package:chronosense/core/di/refresh_signal.dart';
 import 'package:chronosense/domain/model/models.dart';
 
 // ── State ──
@@ -128,6 +129,7 @@ class EntryNotifier extends StateNotifier<EntryUiState> {
     );
 
     await repo.upsertEntry(entry);
+    ref.read(refreshSignalProvider.notifier).notify();
     state = state.copyWith(isSaved: true);
   }
 
@@ -136,6 +138,7 @@ class EntryNotifier extends StateNotifier<EntryUiState> {
     if (existing?.id != null) {
       final repo = ref.read(journalRepositoryProvider);
       await repo.deleteEntry(existing!.id!, existing.date);
+      ref.read(refreshSignalProvider.notifier).notify();
       state = state.copyWith(isDeleted: true);
     }
   }

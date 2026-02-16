@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:chronosense/core/algorithm/interval_engine.dart';
 import 'package:chronosense/core/di/providers.dart';
+import 'package:chronosense/core/di/refresh_signal.dart';
 import 'package:chronosense/domain/model/models.dart';
 
 // ── State ──
@@ -60,6 +61,9 @@ class DayNotifier extends StateNotifier<DayUiState> {
   DayNotifier(this.ref) : super(DayUiState()) {
     _selectedDate = DateTime.now();
     _load();
+
+    // Auto-refresh when data/settings change.
+    ref.listen<int>(refreshSignalProvider, (_, __) => _load());
   }
 
   Future<void> _load() async {

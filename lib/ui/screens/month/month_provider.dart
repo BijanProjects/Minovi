@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:chronosense/core/di/providers.dart';
+import 'package:chronosense/core/di/refresh_signal.dart';
 import 'package:chronosense/domain/model/models.dart';
 
 // ── State ──
@@ -40,6 +41,9 @@ class MonthNotifier extends StateNotifier<MonthUiState> {
     final now = DateTime.now();
     _currentMonth = DateTime(now.year, now.month, 1);
     _load();
+
+    // Auto-refresh when data/settings change.
+    ref.listen<int>(refreshSignalProvider, (_, __) => _load());
   }
 
   static const _months = [

@@ -306,6 +306,12 @@ class UserPreferences {
   final bool notificationsEnabled;
   final bool dynamicColors;
 
+  /// The interval that was active before the most recent change, or null.
+  final int? previousIntervalMinutes;
+
+  /// ISO 8601 datetime string of the most recent interval change, or null.
+  final String? intervalChangedAt;
+
   static const List<int> intervalOptions = [30, 60, 90, 120, 180, 240];
 
   const UserPreferences({
@@ -316,6 +322,8 @@ class UserPreferences {
     this.intervalMinutes = 120,
     this.notificationsEnabled = true,
     this.dynamicColors = false,
+    this.previousIntervalMinutes,
+    this.intervalChangedAt,
   });
 
   String get wakeTimeFormatted =>
@@ -339,6 +347,8 @@ class UserPreferences {
     int? intervalMinutes,
     bool? notificationsEnabled,
     bool? dynamicColors,
+    int? previousIntervalMinutes,
+    String? intervalChangedAt,
   }) {
     return UserPreferences(
       wakeHour: wakeHour ?? this.wakeHour,
@@ -348,6 +358,8 @@ class UserPreferences {
       intervalMinutes: intervalMinutes ?? this.intervalMinutes,
       notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
       dynamicColors: dynamicColors ?? this.dynamicColors,
+      previousIntervalMinutes: previousIntervalMinutes ?? this.previousIntervalMinutes,
+      intervalChangedAt: intervalChangedAt ?? this.intervalChangedAt,
     );
   }
 }

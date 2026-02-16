@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:chronosense/core/di/providers.dart';
+import 'package:chronosense/core/di/refresh_signal.dart';
 import 'package:chronosense/domain/model/models.dart';
 import 'package:chronosense/notification/notification_service.dart';
 
@@ -49,7 +50,13 @@ class SettingsNotifier extends StateNotifier<SettingsUiState> {
   }
 
   Future<void> updateInterval(int minutes) async {
-    final updated = state.prefs.copyWith(intervalMinutes: minutes);
+    final oldInterval = state.prefs.intervalMinutes;
+    final now = DateTime.now().toIso8601String();
+    final updated = state.prefs.copyWith(
+      intervalMinutes: minutes,
+      previousIntervalMinutes: oldInterval,
+      intervalChangedAt: now,
+    );
     await _saveAndSchedule(updated);
   }
 
@@ -69,6 +76,9 @@ class SettingsNotifier extends StateNotifier<SettingsUiState> {
     } else {
       await NotificationService.instance.cancelAll();
     }
+
+    // Signal other providers to refresh.
+    ref.read(refreshSignalProvider.notifier).notify();
   }
 }
 

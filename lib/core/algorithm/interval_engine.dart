@@ -7,44 +7,91 @@ class IntervalEngine {
 
   /// Generate time slots for a day based on preferences,
   /// then overlay any matching journal entries.
+  ///
+  /// Recorded entries (those with content) are treated as immovable anchors
+  /// whose original time boundaries are always preserved.  All remaining
+  /// unrecorded time is divided into slots using the current interval setting.
+  /// This means changing the interval only affects empty/future slots and never
+  /// overwrites previously recorded data.
   static List<TimeSlot> generateSlots({
     required UserPreferences prefs,
     required List<JournalEntry> entries,
   }) {
-    final slots = <TimeSlot>[];
     final wakeMin = prefs.wakeHour * 60 + prefs.wakeMinute;
     final sleepMin = prefs.sleepHour * 60 + prefs.sleepMinute;
     final interval = prefs.intervalMinutes;
 
-    // Build entry lookup by startTime for O(1) matching
-    final entryMap = <String, JournalEntry>{};
+    // Collect recorded (has content) entries as anchored blocks, sorted.
+    final anchorBlocks = <({int startMin, int endMin, JournalEntry entry})>[];
     for (final entry in entries) {
-      entryMap[entry.startTime] = entry;
+      if (entry.hasContent) {
+        final sp = entry.startTime.split(':');
+        final ep = entry.endTime.split(':');
+        anchorBlocks.add((
+          startMin: int.parse(sp[0]) * 60 + int.parse(sp[1]),
+          endMin: int.parse(ep[0]) * 60 + int.parse(ep[1]),
+          entry: entry,
+        ));
+      }
     }
+    anchorBlocks.sort((a, b) => a.startMin.compareTo(b.startMin));
 
+    final slots = <TimeSlot>[];
     int current = wakeMin;
-    while (current + interval <= sleepMin) {
-      final startH = current ~/ 60;
-      final startM = current % 60;
-      final endMin = current + interval;
-      final endH = endMin ~/ 60;
-      final endM = endMin % 60;
+    int blockIdx = 0;
 
-      final startTimeStr =
-          '${startH.toString().padLeft(2, '0')}:${startM.toString().padLeft(2, '0')}';
-      final endTimeStr =
-          '${endH.toString().padLeft(2, '0')}:${endM.toString().padLeft(2, '0')}';
+    while (current < sleepMin) {
+      // Skip anchors whose start we've already passed.
+      while (blockIdx < anchorBlocks.length &&
+          anchorBlocks[blockIdx].startMin < current) {
+        blockIdx++;
+      }
+
+      // If an anchor starts exactly here, emit it and jump past it.
+      if (blockIdx < anchorBlocks.length &&
+          anchorBlocks[blockIdx].startMin == current) {
+        final block = anchorBlocks[blockIdx];
+        slots.add(TimeSlot(
+          startTime: block.entry.startTime,
+          endTime: block.entry.endTime,
+          entry: block.entry,
+        ));
+        current = block.endMin;
+        blockIdx++;
+        continue;
+      }
+
+      // No anchor here — generate an unrecorded slot with current interval.
+      int slotEnd = current + interval;
+
+      // Don't exceed sleep time.
+      if (slotEnd > sleepMin) break;
+
+      // Don't overlap into the next anchor.
+      if (blockIdx < anchorBlocks.length &&
+          slotEnd > anchorBlocks[blockIdx].startMin) {
+        slotEnd = anchorBlocks[blockIdx].startMin;
+      }
+
+      if (slotEnd <= current) break; // safety
 
       slots.add(TimeSlot(
-        startTime: startTimeStr,
-        endTime: endTimeStr,
-        entry: entryMap[startTimeStr],
+        startTime: _minutesToTimeStr(current),
+        endTime: _minutesToTimeStr(slotEnd),
+        entry: null,
       ));
-
-      current = endMin;
+      current = slotEnd;
     }
 
     return slots;
+  }
+
+  // ── helpers ──
+
+  static String _minutesToTimeStr(int minutes) {
+    final h = minutes ~/ 60;
+    final m = minutes % 60;
+    return '${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}';
   }
 
   /// Find the index of the currently-active time slot, or -1.
