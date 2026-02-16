@@ -1,0 +1,31 @@
+name: chronosense
+description: "Understand your time. Reflect on your hours. Live intentionally."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.6.0
+  flutter: ">=3.27.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_riverpod: ^2.6.1
+  riverpod_annotation: ^2.6.1
+  go_router: ^14.8.1
+  sqflite: ^2.4.1
+  path: ^1.9.0
+  shared_preferences: ^2.3.4
+  flutter_local_notifications: ^18.0.1
+  intl: ^0.20.1
+  collection: ^1.19.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+  build_runner: ^2.4.14
+  riverpod_generator: ^2.6.3
+
+flutter:
+  uses-material-design: true

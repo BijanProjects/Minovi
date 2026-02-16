@@ -1,5 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<network-security-config>
-    <!-- ChronoSense is offline-only. Block all cleartext traffic as a defence-in-depth measure. -->
-    <base-config cleartextTrafficPermitted="false" />
-</network-security-config>
