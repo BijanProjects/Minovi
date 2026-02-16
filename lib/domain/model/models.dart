@@ -4,14 +4,14 @@
 enum Mood {
   happy(emoji: '\u{1F60A}', label: 'Happy', colorHex: 0xFF10B981, sortOrder: 0),
   sad(emoji: '\u{1F622}', label: 'Sad', colorHex: 0xFF6366F1, sortOrder: 1),
-  angry(emoji: '\u{1F621}', label: 'Angry', colorHex: 0xFFEF4444, sortOrder: 2),
-  anxious(emoji: '\u{1F61F}', label: 'Anxious', colorHex: 0xFFF59E0B, sortOrder: 3),
-  ashamed(emoji: '\u{1F614}', label: 'Ashamed', colorHex: 0xFF78716C, sortOrder: 4),
-  calm(emoji: '\u{1F9D8}', label: 'Calm', colorHex: 0xFF14B8A6, sortOrder: 5),
+  excited(emoji: '\u{1F929}', label: 'Excited', colorHex: 0xFFEC4899, sortOrder: 2),
+  angry(emoji: '\u{1F621}', label: 'Angry', colorHex: 0xFFEF4444, sortOrder: 3),
+  calm(emoji: '\u{1F9D8}', label: 'Calm', colorHex: 0xFF14B8A6, sortOrder: 4),
+  anxious(emoji: '\u{1F61F}', label: 'Anxious', colorHex: 0xFFF59E0B, sortOrder: 5),
   neutral(emoji: '\u{1F610}', label: 'Neutral', colorHex: 0xFF8B5CF6, sortOrder: 6),
-  stressed(emoji: '\u{1F624}', label: 'Stressed', colorHex: 0xFFF43F5E, sortOrder: 7),
+  ashamed(emoji: '\u{1F614}', label: 'Ashamed', colorHex: 0xFF78716C, sortOrder: 7),
   tired(emoji: '\u{1F634}', label: 'Tired', colorHex: 0xFF94A3B8, sortOrder: 8),
-  excited(emoji: '\u{1F929}', label: 'Excited', colorHex: 0xFFEC4899, sortOrder: 9);
+  stressed(emoji: '\u{1F624}', label: 'Stressed', colorHex: 0xFFF43F5E, sortOrder: 9);
 
   final String emoji;
   final String label;
@@ -44,7 +44,7 @@ enum ActivityTag {
   social(label: 'Social', icon: '🤝', colorHex: 0xFFF59E0B),
   creative(label: 'Creative', icon: '🎨', colorHex: 0xFFA855F7),
   rest(label: 'Rest / Sleep', icon: '😴', colorHex: 0xFF64748B),
-  commute(label: 'Errands', icon: '🚗', colorHex: 0xFF78716C),
+  commute(label: 'Commute', icon: '🚗', colorHex: 0xFF78716C),
   meals(label: 'Meals', icon: '🍽️', colorHex: 0xFFEF4444),
   entertainment(label: 'Leisure', icon: '🎮', colorHex: 0xFFEC4899),
   selfCare(label: 'Self-care', icon: '🧘', colorHex: 0xFF14B8A6);
