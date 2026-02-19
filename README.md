@@ -4,6 +4,16 @@
 
 Minovi is a privacy-first, offline time-journaling app that divides your waking hours into customizable intervals and prompts you to reflect on each one.
 
+## UI Preview
+
+<div align="center" style="display: flex; flex-direction: row; gap: 16px;">
+	<img src="C:/Users/bijan/Downloads/Minova3.jpg" alt="Minovi UI 3" width="250" style="margin: 0 8px; border-radius: 12px; box-shadow: 0 2px 8px #0002;"/>
+	<img src="C:/Users/bijan/Downloads/Minova2.jpg" alt="Minovi UI 2" width="250" style="margin: 0 8px; border-radius: 12px; box-shadow: 0 2px 8px #0002;"/>
+	<img src="C:/Users/bijan/Downloads/Minova1.jpg" alt="Minovi UI 1" width="250" style="margin: 0 8px; border-radius: 12px; box-shadow: 0 2px 8px #0002;"/>
+</div>
+
+---
+
 ## Architecture
 
 **Clean Architecture + Riverpod MVVM**
