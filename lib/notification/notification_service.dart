@@ -17,7 +17,7 @@ class NotificationService {
 
   final FlutterLocalNotificationsPlugin _plugin =
       FlutterLocalNotificationsPlugin();
-  final WebNotificationScheduler _webScheduler = createWebNotificationScheduler();
+  final _webScheduler = createWebNotificationScheduler();
 
   static const _channelId = 'chronosense_interval';
   static const _channelName = 'Interval Reminders';
@@ -112,11 +112,11 @@ class NotificationService {
         );
       } else {
         await _plugin.zonedSchedule(
-          i,
-          'Time to reflect ✨',
-          body,
-          tz.TZDateTime.from(boundary, tz.local),
-          const NotificationDetails(
+          id: i,
+          title: 'Time to reflect ✨',
+          body: body,
+          scheduledDate: tz.TZDateTime.from(boundary, tz.local),
+          notificationDetails: const NotificationDetails(
             android: AndroidNotificationDetails(
               _channelId,
               _channelName,
@@ -133,8 +133,6 @@ class NotificationService {
             ),
           ),
           androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-          uiLocalNotificationDateInterpretation:
-              UILocalNotificationDateInterpretation.absoluteTime,
         );
       }
     }

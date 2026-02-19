@@ -1,3 +1,5 @@
+export 'web_notification_scheduler_stub.dart';
+
 import 'dart:async';
 import 'dart:html' as html;
 
