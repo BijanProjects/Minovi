@@ -217,7 +217,7 @@ class SettingsScreen extends ConsumerWidget {
                 border: Border.all(color: cs.outlineVariant),
                 boxShadow: [
                   BoxShadow(
-                    color: cs.primary.withOpacity(0.08),
+                    color: cs.primary.withAlpha(20),
                     blurRadius: 24,
                     offset: const Offset(0, 8),
                   ),
@@ -238,7 +238,7 @@ class SettingsScreen extends ConsumerWidget {
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: cs.primary.withOpacity(0.18),
+                          color: cs.primary.withAlpha(46),
                           blurRadius: 16,
                           offset: const Offset(0, 4),
                         ),

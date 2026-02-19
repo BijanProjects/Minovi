@@ -26,11 +26,11 @@ class SettingsUiState {
 }
 
 // ── Notifier ──
-class SettingsNotifier extends StateNotifier<SettingsUiState> {
-  final Ref ref;
-
-  SettingsNotifier(this.ref) : super(const SettingsUiState()) {
-    _load();
+class SettingsNotifier extends Notifier<SettingsUiState> {
+  @override
+  SettingsUiState build() {
+    Future.microtask(_load);
+    return const SettingsUiState();
   }
 
   Future<void> _load() async {
@@ -67,13 +67,16 @@ class SettingsNotifier extends StateNotifier<SettingsUiState> {
 
   Future<void> _saveAndSchedule(UserPreferences updated) async {
     state = state.copyWith(prefs: updated);
+    print('SettingsNotifier._saveAndSchedule: prefs updated -> ${updated.toString()}');
     final prefsRepo = ref.read(preferencesRepositoryProvider);
     await prefsRepo.updatePreferences((_) => updated);
 
     // Reschedule notifications
     if (updated.notificationsEnabled) {
+      print('SettingsNotifier._saveAndSchedule: notifications enabled — scheduling for today');
       await NotificationService.instance.scheduleForToday(updated);
     } else {
+      print('SettingsNotifier._saveAndSchedule: notifications disabled — cancelling');
       await NotificationService.instance.cancelAll();
     }
 
@@ -83,6 +86,6 @@ class SettingsNotifier extends StateNotifier<SettingsUiState> {
 }
 
 final settingsProvider =
-    StateNotifierProvider<SettingsNotifier, SettingsUiState>(
-  (ref) => SettingsNotifier(ref),
+    NotifierProvider<SettingsNotifier, SettingsUiState>(
+  SettingsNotifier.new,
 );

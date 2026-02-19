@@ -39,17 +39,20 @@ class MonthUiState {
 }
 
 // ── Notifier ──
-class MonthNotifier extends StateNotifier<MonthUiState> {
-  final Ref ref;
+class MonthNotifier extends Notifier<MonthUiState> {
   late DateTime _currentMonth;
 
-  MonthNotifier(this.ref) : super(MonthUiState()) {
+  @override
+  MonthUiState build() {
     final now = DateTime.now();
     _currentMonth = DateTime(now.year, now.month, 1);
-    _load();
 
-    // Auto-refresh when data/settings change.
-    ref.listen<int>(refreshSignalProvider, (_, __) => _load());
+    Future.microtask(() {
+      _load();
+      ref.listen<int>(refreshSignalProvider, (_, __) => _load());
+    });
+
+    return MonthUiState();
   }
 
   static const _months = [
@@ -141,6 +144,6 @@ class MonthNotifier extends StateNotifier<MonthUiState> {
   Future<void> refresh() async => _load();
 }
 
-final monthProvider = StateNotifierProvider<MonthNotifier, MonthUiState>(
-  (ref) => MonthNotifier(ref),
+final monthProvider = NotifierProvider<MonthNotifier, MonthUiState>(
+  MonthNotifier.new,
 );

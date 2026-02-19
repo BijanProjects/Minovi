@@ -58,16 +58,16 @@ class EntryUiState {
 }
 
 // ── Notifier ──
-class EntryNotifier extends StateNotifier<EntryUiState> {
-  final Ref ref;
-
-  EntryNotifier(this.ref) : super(const EntryUiState());
+class EntryNotifier extends Notifier<EntryUiState> {
+  @override
+  EntryUiState build() => const EntryUiState();
 
   Future<void> loadEntry({
     required String date,
     required String startTime,
     required String endTime,
   }) async {
+    print('EntryNotifier.loadEntry: date=$date start=$startTime end=$endTime');
     state = state.copyWith(
       isLoading: true,
       date: date,
@@ -80,6 +80,7 @@ class EntryNotifier extends StateNotifier<EntryUiState> {
     final existing = await repo.getEntryBySlot(parsedDate, startTime);
 
     if (existing != null) {
+      print('EntryNotifier.loadEntry: found existing entry id=${existing.id}');
       state = state.copyWith(
         isLoading: false,
         existingEntry: existing,
@@ -88,6 +89,7 @@ class EntryNotifier extends StateNotifier<EntryUiState> {
         tags: existing.tags,
       );
     } else {
+      print('EntryNotifier.loadEntry: no existing entry found for slot');
       state = state.copyWith(
         isLoading: false,
         clearExisting: true,
@@ -100,19 +102,23 @@ class EntryNotifier extends StateNotifier<EntryUiState> {
 
   void updateDescription(String value) {
     if (value.length <= 5000) {
+      print('EntryNotifier.updateDescription: length=${value.length}');
       state = state.copyWith(description: value);
     }
   }
 
   void updateMoods(List<Mood> moods) {
+    print('EntryNotifier.updateMoods: moods=${moods.map((m) => m.label).toList()}');
     state = state.copyWith(moods: moods);
   }
 
   void updateTags(List<ActivityTag> tags) {
+    print('EntryNotifier.updateTags: tags=${tags.map((t) => t.label).toList()}');
     state = state.copyWith(tags: tags);
   }
 
   Future<void> save() async {
+    print('EntryNotifier.save: saving entry for date=${state.date} start=${state.startTime} end=${state.endTime}');
     final repo = ref.read(journalRepositoryProvider);
     final now = DateTime.now().millisecondsSinceEpoch;
     final parsedDate = DateTime.parse(state.date);
@@ -129,6 +135,7 @@ class EntryNotifier extends StateNotifier<EntryUiState> {
     );
 
     await repo.upsertEntry(entry);
+    print('EntryNotifier.save: upsert requested (id=${entry.id})');
     ref.read(refreshSignalProvider.notifier).notify();
     state = state.copyWith(isSaved: true);
   }
@@ -136,6 +143,7 @@ class EntryNotifier extends StateNotifier<EntryUiState> {
   Future<void> delete() async {
     final existing = state.existingEntry;
     if (existing?.id != null) {
+      print('EntryNotifier.delete: deleting id=${existing!.id} date=${existing.date}');
       final repo = ref.read(journalRepositoryProvider);
       await repo.deleteEntry(existing!.id!, existing.date);
       ref.read(refreshSignalProvider.notifier).notify();
@@ -143,7 +151,6 @@ class EntryNotifier extends StateNotifier<EntryUiState> {
     }
   }
 }
-
-final entryProvider = StateNotifierProvider.autoDispose<EntryNotifier, EntryUiState>(
-  (ref) => EntryNotifier(ref),
+final entryProvider = NotifierProvider.autoDispose<EntryNotifier, EntryUiState>(
+  EntryNotifier.new,
 );

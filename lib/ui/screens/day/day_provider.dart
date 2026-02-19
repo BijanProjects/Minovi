@@ -60,16 +60,20 @@ class DayUiState {
 }
 
 // ── Notifier ──
-class DayNotifier extends StateNotifier<DayUiState> {
-  final Ref ref;
+class DayNotifier extends Notifier<DayUiState> {
   late DateTime _selectedDate;
 
-  DayNotifier(this.ref) : super(DayUiState()) {
+  @override
+  DayUiState build() {
     _selectedDate = DateTime.now();
-    _load();
 
-    // Auto-refresh when data/settings change.
-    ref.listen<int>(refreshSignalProvider, (_, __) => _load());
+    // Kick off async loading and wire up refresh listener after build.
+    Future.microtask(() {
+      _load();
+      ref.listen<int>(refreshSignalProvider, (_, __) => _load());
+    });
+
+    return DayUiState();
   }
 
   static const _months = [
@@ -200,6 +204,4 @@ class DayNotifier extends StateNotifier<DayUiState> {
   }
 }
 
-final dayProvider = StateNotifierProvider<DayNotifier, DayUiState>((ref) {
-  return DayNotifier(ref);
-});
+final dayProvider = NotifierProvider<DayNotifier, DayUiState>(DayNotifier.new);
