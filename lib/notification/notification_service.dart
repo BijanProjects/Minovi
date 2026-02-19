@@ -89,16 +89,6 @@ class NotificationService {
 
     final now = DateTime.now();
     final wakeMin = prefs.wakeHour * 60 + prefs.wakeMinute;
-<<<<<<< HEAD
-    final sleepMin = prefs.sleepHour * 60 + prefs.sleepMinute;
-
-    var id = 0;
-    for (int boundary = wakeMin + prefs.intervalMinutes;
-        boundary <= sleepMin;
-        boundary += prefs.intervalMinutes) {
-      final boundaryHour = boundary ~/ 60;
-      final boundaryMinute = boundary % 60;
-=======
     final rawSleepMin = prefs.sleepHour * 60 + prefs.sleepMinute;
     final sleepBoundary =
         rawSleepMin <= wakeMin ? rawSleepMin + 1440 : rawSleepMin;
@@ -110,7 +100,6 @@ class NotificationService {
       final boundaryClock = boundary % 1440;
       final boundaryHour = boundaryClock ~/ 60;
       final boundaryMinute = boundaryClock % 60;
->>>>>>> 9a036d2ea74f2cd33eb460ba7132a2752570ab47
 
       final boundaryToday = DateTime(
         now.year,
@@ -124,11 +113,7 @@ class NotificationService {
           ? boundaryToday
           : boundaryToday.add(const Duration(days: 1));
 
-<<<<<<< HEAD
-      final startMin = boundary - prefs.intervalMinutes;
-=======
       final startMin = (boundary - prefs.intervalMinutes) % 1440;
->>>>>>> 9a036d2ea74f2cd33eb460ba7132a2752570ab47
       final startTime =
           '${(startMin ~/ 60).toString().padLeft(2, '0')}:${(startMin % 60).toString().padLeft(2, '0')}';
       final endTime =
