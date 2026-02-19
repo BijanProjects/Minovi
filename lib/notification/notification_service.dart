@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:chronosense/core/algorithm/interval_engine.dart';
 import 'package:chronosense/domain/model/models.dart';
 import 'package:chronosense/util/time_utils.dart';
 import 'package:timezone/data/latest.dart' as tz;
@@ -10,6 +9,8 @@ import 'package:timezone/timezone.dart' as tz;
 
 import 'web_notification_scheduler_stub.dart'
     if (dart.library.html) 'web_notification_scheduler_web.dart';
+import 'timezone_config_stub.dart'
+    if (dart.library.io) 'timezone_config_native.dart';
 
 class NotificationService {
   NotificationService._();
@@ -59,7 +60,7 @@ class NotificationService {
       ),
     );
 
-    _initializeTimezone();
+    await _initializeTimezone();
   }
 
   Future<void> requestPermission() async {
@@ -71,9 +72,11 @@ class NotificationService {
     final androidPlugin = _plugin.resolvePlatformSpecificImplementation<
         AndroidFlutterLocalNotificationsPlugin>();
     await androidPlugin?.requestNotificationsPermission();
+    await androidPlugin?.requestExactAlarmsPermission();
 
-    final iosPlugin =
-        _plugin.resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>();
+    final iosPlugin = _plugin
+        .resolvePlatformSpecificImplementation<
+            IOSFlutterLocalNotificationsPlugin>();
     await iosPlugin?.requestPermissions(alert: true, badge: true, sound: true);
   }
 
@@ -85,37 +88,49 @@ class NotificationService {
     }
 
     final now = DateTime.now();
-    final boundaries = IntervalEngine.remainingBoundaries(
-      prefs: prefs,
-      now: now,
-    );
+    final wakeMin = prefs.wakeHour * 60 + prefs.wakeMinute;
+    final sleepMin = prefs.sleepHour * 60 + prefs.sleepMinute;
 
-    for (int i = 0; i < boundaries.length && i < 24; i++) {
-      final boundary = boundaries[i];
-      if (boundary.isBefore(now)) continue;
+    var id = 0;
+    for (int boundary = wakeMin + prefs.intervalMinutes;
+        boundary <= sleepMin;
+        boundary += prefs.intervalMinutes) {
+      final boundaryHour = boundary ~/ 60;
+      final boundaryMinute = boundary % 60;
 
-      final endMin = boundary.hour * 60 + boundary.minute;
-      final startMin = endMin - prefs.intervalMinutes;
+      final boundaryToday = DateTime(
+        now.year,
+        now.month,
+        now.day,
+        boundaryHour,
+        boundaryMinute,
+      );
+
+      final nextFire = boundaryToday.isAfter(now)
+          ? boundaryToday
+          : boundaryToday.add(const Duration(days: 1));
+
+      final startMin = boundary - prefs.intervalMinutes;
       final startTime =
           '${(startMin ~/ 60).toString().padLeft(2, '0')}:${(startMin % 60).toString().padLeft(2, '0')}';
       final endTime =
-          '${boundary.hour.toString().padLeft(2, '0')}:${boundary.minute.toString().padLeft(2, '0')}';
+          '${boundaryHour.toString().padLeft(2, '0')}:${boundaryMinute.toString().padLeft(2, '0')}';
 
       final body = 'How was ${TimeUtils.formatTimeRange(startTime, endTime)}?';
 
       if (kIsWeb) {
         _webScheduler.schedule(
-          id: i,
-          when: boundary,
+          id: id,
+          when: nextFire,
           title: 'Time to reflect ✨',
           body: body,
         );
       } else {
         await _plugin.zonedSchedule(
-          id: i,
+          id: id,
           title: 'Time to reflect ✨',
           body: body,
-          scheduledDate: tz.TZDateTime.from(boundary, tz.local),
+          scheduledDate: tz.TZDateTime.from(nextFire, tz.local),
           notificationDetails: const NotificationDetails(
             android: AndroidNotificationDetails(
               _channelId,
@@ -133,8 +148,11 @@ class NotificationService {
             ),
           ),
           androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+          matchDateTimeComponents: DateTimeComponents.time,
         );
       }
+
+      id++;
     }
   }
 
@@ -155,11 +173,13 @@ class NotificationService {
     await _plugin.cancelAll();
   }
 
-  void _initializeTimezone() {
+  Future<void> _initializeTimezone() async {
     if (_tzInitialized) {
       return;
     }
+
     tz.initializeTimeZones();
+    await configureLocalTimezone();
     _tzInitialized = true;
   }
 
