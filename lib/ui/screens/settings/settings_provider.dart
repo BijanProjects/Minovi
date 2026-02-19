@@ -71,14 +71,7 @@ class SettingsNotifier extends Notifier<SettingsUiState> {
     final prefsRepo = ref.read(preferencesRepositoryProvider);
     await prefsRepo.updatePreferences((_) => updated);
 
-    // Reschedule notifications
-    if (updated.notificationsEnabled) {
-      print('SettingsNotifier._saveAndSchedule: notifications enabled — scheduling for today');
-      await NotificationService.instance.scheduleForToday(updated);
-    } else {
-      print('SettingsNotifier._saveAndSchedule: notifications disabled — cancelling');
-      await NotificationService.instance.cancelAll();
-    }
+    await NotificationService.instance.scheduleFromPreferences(updated);
 
     // Signal other providers to refresh.
     ref.read(refreshSignalProvider.notifier).notify();

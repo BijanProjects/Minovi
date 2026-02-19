@@ -1,28 +1,36 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:chronosense/core/algorithm/interval_engine.dart';
 import 'package:chronosense/domain/model/models.dart';
 import 'package:chronosense/util/time_utils.dart';
+import 'package:timezone/data/latest.dart' as tz;
+import 'package:timezone/timezone.dart' as tz;
 
-/// Notification service — mirrors NotificationScheduler.kt
-/// Schedules notifications at each slot boundary using delayed show().
+import 'web_notification_scheduler_stub.dart'
+    if (dart.library.html) 'web_notification_scheduler_web.dart';
+import 'timezone_config_stub.dart'
+    if (dart.library.io) 'timezone_config_native.dart';
+
 class NotificationService {
   NotificationService._();
   static final NotificationService instance = NotificationService._();
 
   final FlutterLocalNotificationsPlugin _plugin =
       FlutterLocalNotificationsPlugin();
+  final _webScheduler = createWebNotificationScheduler();
 
   static const _channelId = 'chronosense_interval';
   static const _channelName = 'Interval Reminders';
   static const _channelDesc = 'Notifications at each check-in interval';
 
+  var _tzInitialized = false;
+
   Future<void> initialize() async {
     if (kIsWeb) {
-      print('NotificationService.initialize: running on web — skipping native initialization.');
       return;
     }
-    print('NotificationService.initialize: initializing native plugin.');
+
     const androidSettings =
         AndroidInitializationSettings('@mipmap/ic_launcher');
     const iosSettings = DarwinInitializationSettings(
@@ -40,7 +48,6 @@ class NotificationService {
       onDidReceiveNotificationResponse: _onNotificationTap,
     );
 
-    // Create Android notification channel
     final androidPlugin = _plugin.resolvePlatformSpecificImplementation<
         AndroidFlutterLocalNotificationsPlugin>();
     await androidPlugin?.createNotificationChannel(
@@ -52,102 +59,132 @@ class NotificationService {
         enableVibration: true,
       ),
     );
+
+    await _initializeTimezone();
   }
 
   Future<void> requestPermission() async {
     if (kIsWeb) {
-      print('NotificationService.requestPermission: web — no-op');
+      await _webScheduler.requestPermission();
       return;
     }
-    print('NotificationService.requestPermission: requesting Android notifications permission');
+
     final androidPlugin = _plugin.resolvePlatformSpecificImplementation<
         AndroidFlutterLocalNotificationsPlugin>();
     await androidPlugin?.requestNotificationsPermission();
+    await androidPlugin?.requestExactAlarmsPermission();
+
+    final iosPlugin = _plugin
+        .resolvePlatformSpecificImplementation<
+            IOSFlutterLocalNotificationsPlugin>();
+    await iosPlugin?.requestPermissions(alert: true, badge: true, sound: true);
   }
 
-  /// Schedule notifications for all remaining boundaries today.
   Future<void> scheduleForToday(UserPreferences prefs) async {
-    if (kIsWeb) {
-      print('NotificationService.scheduleForToday: web — no-op (prefs=${prefs.toString()})');
-      return;
-    }
-
-    print('NotificationService.scheduleForToday: called with prefs=${prefs.toString()}');
     await cancelAll();
 
     if (!prefs.notificationsEnabled) {
-      print('NotificationService.scheduleForToday: notifications disabled in prefs — returning');
       return;
     }
 
     final now = DateTime.now();
-    final boundaries = IntervalEngine.remainingBoundaries(
-      prefs: prefs,
-      now: now,
-    );
+    final wakeMin = prefs.wakeHour * 60 + prefs.wakeMinute;
+    final rawSleepMin = prefs.sleepHour * 60 + prefs.sleepMinute;
+    final sleepBoundary =
+        rawSleepMin <= wakeMin ? rawSleepMin + 1440 : rawSleepMin;
 
-    for (int i = 0; i < boundaries.length && i < 24; i++) {
-      final boundary = boundaries[i];
-      final delay = boundary.difference(now);
-      if (delay.isNegative) continue;
+    var id = 0;
+    for (int boundary = wakeMin + prefs.intervalMinutes;
+        boundary <= sleepBoundary;
+        boundary += prefs.intervalMinutes) {
+      final boundaryClock = boundary % 1440;
+      final boundaryHour = boundaryClock ~/ 60;
+      final boundaryMinute = boundaryClock % 60;
 
-      // Compute the slot that just ended
-      final endMin = boundary.hour * 60 + boundary.minute;
-      final startMin = endMin - prefs.intervalMinutes;
+      final boundaryToday = DateTime(
+        now.year,
+        now.month,
+        now.day,
+        boundaryHour,
+        boundaryMinute,
+      );
+
+      final nextFire = boundaryToday.isAfter(now)
+          ? boundaryToday
+          : boundaryToday.add(const Duration(days: 1));
+
+      final startMin = (boundary - prefs.intervalMinutes) % 1440;
       final startTime =
           '${(startMin ~/ 60).toString().padLeft(2, '0')}:${(startMin % 60).toString().padLeft(2, '0')}';
       final endTime =
-          '${boundary.hour.toString().padLeft(2, '0')}:${boundary.minute.toString().padLeft(2, '0')}';
+          '${boundaryHour.toString().padLeft(2, '0')}:${boundaryMinute.toString().padLeft(2, '0')}';
 
-      final body =
-          'How was ${TimeUtils.formatTimeRange(startTime, endTime)}?';
+      final body = 'How was ${TimeUtils.formatTimeRange(startTime, endTime)}?';
 
-      // Schedule using delayed Future.
-      // For production-grade exact alarms, integrate the timezone package
-      // and use zonedSchedule instead.
-      print('NotificationService.scheduleForToday: scheduling notification #$i in ${delay.inSeconds}s — body="$body"');
-      Future.delayed(delay, () async {
-        try {
-          await _plugin.show(
-            id: i,
-            title: 'Time to reflect ✨',
-            body: body,
-            notificationDetails: const NotificationDetails(
-              android: AndroidNotificationDetails(
-                _channelId,
-                _channelName,
-                channelDescription: _channelDesc,
-                importance: Importance.high,
-                priority: Priority.high,
-                enableVibration: true,
-                autoCancel: true,
-              ),
-              iOS: DarwinNotificationDetails(
-                presentAlert: true,
-                presentBadge: true,
-                presentSound: true,
-              ),
+      if (kIsWeb) {
+        _webScheduler.schedule(
+          id: id,
+          when: nextFire,
+          title: 'Time to reflect ✨',
+          body: body,
+        );
+      } else {
+        await _plugin.zonedSchedule(
+          id: id,
+          title: 'Time to reflect ✨',
+          body: body,
+          scheduledDate: tz.TZDateTime.from(nextFire, tz.local),
+          notificationDetails: const NotificationDetails(
+            android: AndroidNotificationDetails(
+              _channelId,
+              _channelName,
+              channelDescription: _channelDesc,
+              importance: Importance.high,
+              priority: Priority.high,
+              enableVibration: true,
+              autoCancel: true,
             ),
-          );
-          print('NotificationService: showed notification id=$i');
-        } catch (e, st) {
-          print('NotificationService: error showing notification id=$i -> $e');
-          print(st);
-        }
-      });
+            iOS: DarwinNotificationDetails(
+              presentAlert: true,
+              presentBadge: true,
+              presentSound: true,
+            ),
+          ),
+          androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+          matchDateTimeComponents: DateTimeComponents.time,
+        );
+      }
+
+      id++;
+    }
+  }
+
+  Future<void> scheduleFromPreferences(UserPreferences prefs) async {
+    if (prefs.notificationsEnabled) {
+      await requestPermission();
+      await scheduleForToday(prefs);
+    } else {
+      await cancelAll();
     }
   }
 
   Future<void> cancelAll() async {
     if (kIsWeb) {
-      print('NotificationService.cancelAll: web — no-op');
+      _webScheduler.cancelAll();
       return;
     }
-    print('NotificationService.cancelAll: cancelling notifications');
     await _plugin.cancelAll();
   }
 
-  void _onNotificationTap(NotificationResponse response) {
-    // App opens to main screen on notification tap
+  Future<void> _initializeTimezone() async {
+    if (_tzInitialized) {
+      return;
+    }
+
+    tz.initializeTimeZones();
+    await configureLocalTimezone();
+    _tzInitialized = true;
   }
+
+  void _onNotificationTap(NotificationResponse response) {}
 }

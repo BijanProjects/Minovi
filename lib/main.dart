@@ -6,6 +6,7 @@ import 'package:chronosense/ui/theme/theme.dart';
 import 'package:chronosense/ui/navigation/app_router.dart';
 import 'package:chronosense/data/local/app_database.dart';
 import 'package:chronosense/notification/notification_service.dart';
+import 'package:chronosense/data/preferences/user_preferences_store.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -22,8 +23,11 @@ void main() async {
     );
 
     await AppDatabase.instance.database;
-    await NotificationService.instance.initialize();
   }
+
+  await NotificationService.instance.initialize();
+  final prefs = await UserPreferencesStore.instance.load();
+  await NotificationService.instance.scheduleFromPreferences(prefs);
 
   runApp(const ProviderScope(child: MinoviApp()));
 }
