@@ -1,0 +1,17 @@
+* text=auto
+
+*.dart text eol=lf
+*.kt text eol=lf
+*.kts text eol=lf
+*.java text eol=lf
+*.swift text eol=lf
+*.m text eol=lf
+*.h text eol=lf
+*.cc text eol=lf
+*.cmake text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+*.md text eol=lf
+*.sh text eol=lf
+*.ps1 text eol=crlf
+*.bat text eol=crlf
