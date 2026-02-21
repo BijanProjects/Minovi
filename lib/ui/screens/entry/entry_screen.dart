@@ -219,76 +219,87 @@ class _EntryScreenState extends ConsumerState<EntryScreen>
     final cs = Theme.of(context).colorScheme;
     showModalBottomSheet(
       context: context,
+      useSafeArea: true,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
       ),
-      builder: (context) => Padding(
-        padding: const EdgeInsets.all(Spacing.xxl),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: cs.outlineVariant,
-                borderRadius: BorderRadius.circular(2),
+      builder: (context) {
+        final mediaQuery = MediaQuery.of(context);
+        final bottomInset = mediaQuery.viewPadding.bottom + mediaQuery.viewInsets.bottom;
+
+        return Padding(
+          padding: EdgeInsets.fromLTRB(
+            Spacing.xxl,
+            Spacing.xxl,
+            Spacing.xxl,
+            Spacing.lg + bottomInset,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: cs.outlineVariant,
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
-            ),
-            const SizedBox(height: Spacing.xxl),
-            Icon(Icons.delete_outline, size: 48, color: cs.error),
-            const SizedBox(height: Spacing.lg),
-            Text(
-              'Delete this entry?',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-            ),
-            const SizedBox(height: Spacing.sm),
-            Text(
-              'This action cannot be undone.',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: cs.onSurfaceVariant,
-                  ),
-            ),
-            const SizedBox(height: Spacing.xxl),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => Navigator.pop(context),
-                    style: OutlinedButton.styleFrom(
-                      minimumSize: const Size(0, 48),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(AppRadius.md),
-                      ),
+              const SizedBox(height: Spacing.xl),
+              Icon(Icons.delete_outline, size: 48, color: cs.error),
+              const SizedBox(height: Spacing.lg),
+              Text(
+                'Delete this entry?',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w600,
                     ),
-                    child: const Text('Cancel'),
-                  ),
-                ),
-                const SizedBox(width: Spacing.md),
-                Expanded(
-                  child: FilledButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      notifier.delete();
-                    },
-                    style: FilledButton.styleFrom(
-                      backgroundColor: cs.error,
-                      minimumSize: const Size(0, 48),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(AppRadius.md),
-                      ),
+              ),
+              const SizedBox(height: Spacing.sm),
+              Text(
+                'This action cannot be undone.',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: cs.onSurfaceVariant,
                     ),
-                    child: const Text('Delete'),
+              ),
+              const SizedBox(height: Spacing.xl),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size(0, 52),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppRadius.md),
+                        ),
+                      ),
+                      child: const Text('Cancel'),
+                    ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: Spacing.lg),
-          ],
-        ),
-      ),
+                  const SizedBox(width: Spacing.md),
+                  Expanded(
+                    child: FilledButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        notifier.delete();
+                      },
+                      style: FilledButton.styleFrom(
+                        backgroundColor: cs.error,
+                        minimumSize: const Size(0, 52),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppRadius.md),
+                        ),
+                      ),
+                      child: const Text('Delete'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

@@ -12,6 +12,12 @@
 @import flutter_local_notifications;
 #endif
 
+#if __has_include(<flutter_timezone/FlutterTimezonePlugin.h>)
+#import <flutter_timezone/FlutterTimezonePlugin.h>
+#else
+@import flutter_timezone;
+#endif
+
 #if __has_include(<shared_preferences_foundation/SharedPreferencesPlugin.h>)
 #import <shared_preferences_foundation/SharedPreferencesPlugin.h>
 #else
@@ -28,6 +34,7 @@
 
 + (void)registerWithRegistry:(NSObject<FlutterPluginRegistry>*)registry {
   [FlutterLocalNotificationsPlugin registerWithRegistrar:[registry registrarForPlugin:@"FlutterLocalNotificationsPlugin"]];
+  [FlutterTimezonePlugin registerWithRegistrar:[registry registrarForPlugin:@"FlutterTimezonePlugin"]];
   [SharedPreferencesPlugin registerWithRegistrar:[registry registrarForPlugin:@"SharedPreferencesPlugin"]];
   [SqflitePlugin registerWithRegistrar:[registry registrarForPlugin:@"SqflitePlugin"]];
 }
