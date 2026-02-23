@@ -17,7 +17,6 @@ class DayScreen extends ConsumerStatefulWidget {
 class _DayScreenState extends ConsumerState<DayScreen>
     with SingleTickerProviderStateMixin {
   final ScrollController _scrollController = ScrollController();
-  bool _hasAutoScrolled = false;
   late AnimationController _settleController;
   double _dragOffset = 0;
   bool _settling = false;
@@ -46,7 +45,6 @@ class _DayScreenState extends ConsumerState<DayScreen>
     _animateTo(forward ? -screenW : screenW, onComplete: () {
       ref.read(dayProvider.notifier).navigateInstant(forward: forward);
       setState(() => _dragOffset = 0);
-      _hasAutoScrolled = false;
     });
   }
 
@@ -73,7 +71,6 @@ class _DayScreenState extends ConsumerState<DayScreen>
       _animateTo(forward ? -screenW : screenW, onComplete: () {
         ref.read(dayProvider.notifier).navigateInstant(forward: forward);
         setState(() => _dragOffset = 0);
-        _hasAutoScrolled = false;
       });
     } else {
       _animateTo(0);
@@ -116,25 +113,6 @@ class _DayScreenState extends ConsumerState<DayScreen>
     _settling = false;
   }
 
-  void _autoScrollToActiveSlot(DayUiState state) {
-    if (!_hasAutoScrolled && state.isToday && state.activeSlotIndex >= 0) {
-      _hasAutoScrolled = true;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (_scrollController.hasClients) {
-          final target = state.activeSlotIndex * 88.0;
-          final clampedTarget = target.clamp(0.0, _scrollController.position.maxScrollExtent);
-          final current = _scrollController.offset;
-          if ((current - clampedTarget).abs() > 2) {
-            _scrollController.animateTo(
-              clampedTarget,
-              duration: const Duration(milliseconds: 600),
-              curve: Curves.easeOutCubic,
-            );
-          }
-        }
-      });
-    }
-  }
 
   // ── Build ──
 
@@ -144,7 +122,6 @@ class _DayScreenState extends ConsumerState<DayScreen>
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
 
-    _autoScrollToActiveSlot(state);
 
     return SafeArea(
       child: Column(
