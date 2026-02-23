@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:chronosense/ui/screens/entry/entry_provider.dart';
-import 'package:chronosense/ui/components/mood_selector.dart';
-import 'package:chronosense/ui/components/tag_selector.dart';
 import 'package:chronosense/ui/design/tokens.dart';
 import 'package:chronosense/util/time_utils.dart';
+import 'package:chronosense/domain/model/models.dart';
 
 class EntryScreen extends ConsumerStatefulWidget {
   final String date;
@@ -30,6 +29,8 @@ class _EntryScreenState extends ConsumerState<EntryScreen>
   late final AnimationController _enterAnim;
   late final Animation<double> _fadeIn;
   late final Animation<Offset> _slideUp;
+  bool _isEditingMoods = false;
+  bool _isEditingActions = false;
 
   @override
   void initState() {
@@ -79,7 +80,8 @@ class _EntryScreenState extends ConsumerState<EntryScreen>
     final cs = theme.colorScheme;
 
     // Sync text controller
-    if (_descController.text != state.description && !_descController.text.isNotEmpty) {
+    if (_descController.text != state.description &&
+        !_descController.text.isNotEmpty) {
       _descController.text = state.description;
     }
 
@@ -153,9 +155,11 @@ class _EntryScreenState extends ConsumerState<EntryScreen>
                               minLines: 3,
                               maxLength: 5000,
                               decoration: InputDecoration(
-                                hintText: 'Describe what you did, how it went, any thoughts...',
+                                hintText:
+                                    'Describe what you did, how it went, any thoughts...',
                                 hintStyle: TextStyle(
-                                  color: cs.onSurfaceVariant.withValues(alpha: 0.5),
+                                  color: cs.onSurfaceVariant
+                                      .withValues(alpha: 0.5),
                                 ),
                                 counterText: '',
                               ),
@@ -164,25 +168,53 @@ class _EntryScreenState extends ConsumerState<EntryScreen>
 
                             const SizedBox(height: Spacing.xl),
 
-                            // Mood
-                            MoodSelector(
+                            _buildCategorySection(
+                              context: context,
+                              title: 'How did you feel?',
+                              leadingIcon: Icons.edit_outlined,
                               selected: state.moods,
-                              onChanged: notifier.updateMoods,
+                              categories: state.moodCategories,
+                              isEditing: _isEditingMoods,
+                              onToggleEditing: () {
+                                setState(
+                                    () => _isEditingMoods = !_isEditingMoods);
+                              },
+                              onChipTap: notifier.toggleMoodSelection,
+                              onChipRemove: notifier.removeMoodCategory,
+                              onAddCategory: () => _showAddCategoryDialog(
+                                context: context,
+                                title: 'Add emotion',
+                                hint: 'Type a new emotion',
+                                onSubmit: notifier.addMoodCategory,
+                              ),
+                              itemBuilder: (label) =>
+                                  '${moodEmojiForLabel(label)} $label',
+                              maxSelectionText: '${state.moods.length} / 3',
                             ),
 
                             const SizedBox(height: Spacing.xl),
 
-                            // Tags
-                            Text(
-                              'What were you doing?',
-                              style: theme.textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const SizedBox(height: Spacing.md),
-                            TagSelector(
+                            _buildCategorySection(
+                              context: context,
+                              title: 'What were you doing?',
+                              leadingIcon: Icons.edit_note_outlined,
                               selected: state.tags,
-                              onChanged: notifier.updateTags,
+                              categories: state.actionCategories,
+                              isEditing: _isEditingActions,
+                              onToggleEditing: () {
+                                setState(() =>
+                                    _isEditingActions = !_isEditingActions);
+                              },
+                              onChipTap: notifier.toggleTagSelection,
+                              onChipRemove: notifier.removeActionCategory,
+                              onAddCategory: () => _showAddCategoryDialog(
+                                context: context,
+                                title: 'Add action',
+                                hint: 'Type a new action',
+                                onSubmit: notifier.addActionCategory,
+                              ),
+                              itemBuilder: (label) =>
+                                  '${activityIconForLabel(label)} $label',
                             ),
 
                             const SizedBox(height: Spacing.xxxl),
@@ -215,6 +247,217 @@ class _EntryScreenState extends ConsumerState<EntryScreen>
     );
   }
 
+  Widget _buildCategorySection({
+    required BuildContext context,
+    required String title,
+    required IconData leadingIcon,
+    required List<String> selected,
+    required List<String> categories,
+    required bool isEditing,
+    required VoidCallback onToggleEditing,
+    required ValueChanged<String> onChipTap,
+    required Future<void> Function(String) onChipRemove,
+    required VoidCallback onAddCategory,
+    required String Function(String) itemBuilder,
+    String? maxSelectionText,
+  }) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            IconButton(
+              onPressed: onToggleEditing,
+              visualDensity: VisualDensity.compact,
+              iconSize: 18,
+              tooltip: isEditing ? 'Done editing' : 'Edit categories',
+              icon: Icon(
+                isEditing ? Icons.done_rounded : leadingIcon,
+                color: cs.onSurfaceVariant,
+              ),
+            ),
+            Text(
+              title,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const Spacer(),
+            if (maxSelectionText != null)
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: Spacing.sm,
+                  vertical: Spacing.xxs,
+                ),
+                decoration: BoxDecoration(
+                  color: cs.primary.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(AppRadius.pill),
+                ),
+                child: Text(
+                  maxSelectionText,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: cs.primary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: Spacing.sm),
+        Wrap(
+          spacing: Spacing.sm,
+          runSpacing: Spacing.sm,
+          children: [
+            ...categories.map((item) {
+              final isSelected = selected.contains(item);
+              final chipColor = Color(
+                title.startsWith('How')
+                    ? moodColorHexForLabel(item)
+                    : activityColorHexForLabel(item),
+              );
+
+              return Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  GestureDetector(
+                    onTap: () => onChipTap(item),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      curve: Curves.easeOutCubic,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: Spacing.md,
+                        vertical: Spacing.sm,
+                      ),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? chipColor.withValues(alpha: 0.14)
+                            : cs.surfaceContainerHighest
+                                .withValues(alpha: 0.45),
+                        borderRadius: BorderRadius.circular(AppRadius.md),
+                        border: Border.all(
+                          color: isSelected
+                              ? chipColor
+                              : cs.outlineVariant.withValues(alpha: 0.7),
+                          width: isSelected ? 1.5 : 1,
+                        ),
+                      ),
+                      child: Text(
+                        itemBuilder(item),
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          color: isSelected ? chipColor : cs.onSurfaceVariant,
+                          fontWeight:
+                              isSelected ? FontWeight.w600 : FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ),
+                  if (isEditing)
+                    Positioned(
+                      top: -6,
+                      right: -6,
+                      child: GestureDetector(
+                        onTap: () => onChipRemove(item),
+                        child: Container(
+                          width: 18,
+                          height: 18,
+                          decoration: BoxDecoration(
+                            color: cs.surface,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: cs.outlineVariant),
+                          ),
+                          child: Icon(
+                            Icons.close_rounded,
+                            size: 12,
+                            color: cs.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              );
+            }),
+            GestureDetector(
+              onTap: onAddCategory,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: Spacing.md,
+                  vertical: Spacing.sm,
+                ),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                  border: Border.all(
+                    color: cs.primary.withValues(alpha: 0.45),
+                  ),
+                  color: cs.primary.withValues(alpha: 0.08),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.add_rounded, size: 16, color: cs.primary),
+                    const SizedBox(width: Spacing.xs),
+                    Text(
+                      'Add',
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: cs.primary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Future<void> _showAddCategoryDialog({
+    required BuildContext context,
+    required String title,
+    required String hint,
+    required Future<void> Function(String) onSubmit,
+  }) async {
+    final input = TextEditingController();
+    await showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(title),
+        content: TextField(
+          controller: input,
+          autofocus: true,
+          textCapitalization: TextCapitalization.sentences,
+          decoration: InputDecoration(hintText: hint),
+          onSubmitted: (value) async {
+            final normalized = value.trim();
+            if (normalized.isEmpty) return;
+            await onSubmit(normalized);
+            if (context.mounted) Navigator.of(context).pop();
+          },
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              final normalized = input.text.trim();
+              if (normalized.isEmpty) return;
+              await onSubmit(normalized);
+              if (context.mounted) Navigator.of(context).pop();
+            },
+            child: const Text('Add'),
+          ),
+        ],
+      ),
+    );
+    input.dispose();
+  }
+
   void _showDeleteConfirmation(BuildContext context, EntryNotifier notifier) {
     final cs = Theme.of(context).colorScheme;
     showModalBottomSheet(
@@ -226,7 +469,8 @@ class _EntryScreenState extends ConsumerState<EntryScreen>
       ),
       builder: (context) {
         final mediaQuery = MediaQuery.of(context);
-        final bottomInset = mediaQuery.viewPadding.bottom + mediaQuery.viewInsets.bottom;
+        final bottomInset =
+            mediaQuery.viewPadding.bottom + mediaQuery.viewInsets.bottom;
 
         return Padding(
           padding: EdgeInsets.fromLTRB(

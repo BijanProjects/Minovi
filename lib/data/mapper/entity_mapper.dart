@@ -8,23 +8,21 @@ class EntityMapper {
     // Parse tags
     final tagsStr = map['tags'] as String? ?? '';
     final tags = tagsStr.isEmpty
-        ? <ActivityTag>[]
+        ? <String>[]
         : tagsStr
             .split(',')
-            .map((t) => ActivityTag.fromLabel(t.trim()))
-            .where((t) => t != null)
-            .cast<ActivityTag>()
+            .map((t) => normalizeActivityLabel(t))
+            .where((t) => t.isNotEmpty)
             .toList();
 
     // Parse moods (comma-separated)
     final moodStr = map['mood'] as String? ?? '';
     final moods = moodStr.isEmpty
-        ? <Mood>[]
+        ? <String>[]
         : moodStr
             .split(',')
-            .map((m) => Mood.fromName(m.trim()))
-            .where((m) => m != null)
-            .cast<Mood>()
+            .map((m) => normalizeMoodLabel(m))
+            .where((m) => m.isNotEmpty)
             .toList();
 
     return JournalEntry(
@@ -40,8 +38,7 @@ class EntityMapper {
   }
 
   static Map<String, dynamic> toMap(JournalEntry entry) {
-    final dateStr =
-        '${entry.date.year.toString().padLeft(4, '0')}-'
+    final dateStr = '${entry.date.year.toString().padLeft(4, '0')}-'
         '${entry.date.month.toString().padLeft(2, '0')}-'
         '${entry.date.day.toString().padLeft(2, '0')}';
 
@@ -51,8 +48,8 @@ class EntityMapper {
       'startTime': entry.startTime,
       'endTime': entry.endTime,
       'description': entry.description,
-      'mood': entry.moods.map((m) => m.name).join(','),
-      'tags': entry.tags.map((t) => t.label).join(','),
+      'mood': entry.moods.join(','),
+      'tags': entry.tags.join(','),
       'createdAt': entry.createdAt,
     };
   }

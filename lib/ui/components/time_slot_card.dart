@@ -23,7 +23,7 @@ class TimeSlotCard extends StatelessWidget {
     final filled = slot.isFilled;
     final entry = slot.entry;
     final moodColor = entry?.moods.isNotEmpty == true
-        ? Color(entry!.moods.first.colorHex)
+        ? Color(moodColorHexForLabel(entry!.moods.first))
         : cs.outlineVariant;
 
     return Card(
@@ -84,14 +84,16 @@ class TimeSlotCard extends StatelessWidget {
           children: [
             if (entry.moods.isNotEmpty) ...[
               Text(
-                entry.moods.map((m) => m.emoji).join(' '),
+                entry.moods.map(moodEmojiForLabel).join(' '),
                 style: theme.textTheme.titleLarge,
               ),
               const SizedBox(width: Spacing.sm),
             ],
             Expanded(
               child: Text(
-                entry.description.isEmpty ? 'No description' : entry.description,
+                entry.description.isEmpty
+                    ? 'No description'
+                    : entry.description,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: theme.textTheme.bodyMedium?.copyWith(
@@ -109,7 +111,7 @@ class TimeSlotCard extends StatelessWidget {
     );
   }
 
-  Widget _buildTagChips(BuildContext context, List<ActivityTag> tags) {
+  Widget _buildTagChips(BuildContext context, List<String> tags) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     final displayTags = tags.take(3).toList();
@@ -126,13 +128,14 @@ class TimeSlotCard extends StatelessWidget {
               vertical: Spacing.xxs,
             ),
             decoration: BoxDecoration(
-              color: Color(tag.colorHex).withValues(alpha: 0.12),
+              color:
+                  Color(activityColorHexForLabel(tag)).withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(AppRadius.pill),
             ),
             child: Text(
-              '${tag.icon} ${tag.label}',
+              '${activityIconForLabel(tag)} $tag',
               style: theme.textTheme.labelSmall?.copyWith(
-                color: Color(tag.colorHex),
+                color: Color(activityColorHexForLabel(tag)),
                 fontWeight: FontWeight.w500,
               ),
             ),

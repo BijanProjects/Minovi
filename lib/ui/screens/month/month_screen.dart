@@ -527,7 +527,7 @@ class _SummaryCard extends StatelessWidget {
             theme: theme,
           ),
           _StatColumn(
-            value: insight.topActivity?.label ?? '—',
+            value: insight.topActivity ?? '—',
             label: 'Top Activity',
             theme: theme,
           ),
@@ -576,7 +576,7 @@ class _StatColumn extends StatelessWidget {
 
 // ── Mood Distribution ──────────────────────────────────────────────
 class _MoodDistribution extends StatelessWidget {
-  final Map<Mood, int> moods;
+  final Map<String, int> moods;
 
   const _MoodDistribution({required this.moods});
 
@@ -600,17 +600,21 @@ class _MoodDistribution extends StatelessWidget {
               horizontal: Spacing.xs,
             ),
             decoration: BoxDecoration(
-              color: Color(entry.key.colorHex).withValues(alpha: 0.15),
+              color: Color(moodColorHexForLabel(entry.key))
+                  .withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(AppRadius.md),
             ),
             child: Column(
               children: [
-                Text(entry.key.emoji, style: const TextStyle(fontSize: 20)),
+                Text(
+                  moodEmojiForLabel(entry.key),
+                  style: const TextStyle(fontSize: 20),
+                ),
                 const SizedBox(height: Spacing.xxs),
                 Text(
                   '${entry.value}',
                   style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                        color: Color(entry.key.colorHex),
+                        color: Color(moodColorHexForLabel(entry.key)),
                         fontWeight: FontWeight.w600,
                       ),
                 ),
@@ -625,7 +629,7 @@ class _MoodDistribution extends StatelessWidget {
 
 // ── Activity Chart ─────────────────────────────────────────────────
 class _ActivityChart extends StatelessWidget {
-  final Map<ActivityTag, int> tags;
+  final Map<String, int> tags;
 
   const _ActivityChart({required this.tags});
 
@@ -656,12 +660,12 @@ class _ActivityChart extends StatelessWidget {
                   width: 120,
                   child: Row(
                     children: [
-                      Text(entry.key.icon,
+                      Text(activityIconForLabel(entry.key),
                           style: const TextStyle(fontSize: 16)),
                       const SizedBox(width: Spacing.xs),
                       Flexible(
                         child: Text(
-                          entry.key.label,
+                          entry.key,
                           overflow: TextOverflow.ellipsis,
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: cs.onSurface,
