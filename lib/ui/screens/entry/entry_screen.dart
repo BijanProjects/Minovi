@@ -644,10 +644,14 @@ class _EntryScreenState extends ConsumerState<EntryScreen>
         borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
       ),
       builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setSheetState) {
+          builder: (ctx, setSheetState) {
           final theme = Theme.of(ctx);
           final cs = theme.colorScheme;
-          final bottomInset = MediaQuery.of(ctx).viewInsets.bottom;
+          final media = MediaQuery.of(ctx);
+          // Include both viewInsets (keyboard) and viewPadding (system UI such as
+          // navigation bar) so the Add button is not obscured on devices with
+          // gesture/navigation bars.
+          final bottomInset = media.viewPadding.bottom + media.viewInsets.bottom;
 
           return SingleChildScrollView(
             padding: EdgeInsets.fromLTRB(
