@@ -118,8 +118,6 @@ class _MonthScreenState extends ConsumerState<MonthScreen>
     final now = DateTime.now();
     final isCurrentMonth =
         state.month.year == now.year && state.month.month == now.month;
-    final currentMonthLabel =
-        isCurrentMonth ? 'This Month' : state.formattedMonth;
 
     return SafeArea(
       child: Column(
@@ -164,48 +162,14 @@ class _MonthScreenState extends ConsumerState<MonthScreen>
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-              ],
-            ),
-          ),
-
-          // ── Monthly Overview Header (fixed) ──
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              Spacing.xl,
-              Spacing.md,
-              Spacing.xl,
-              Spacing.xl,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Monthly Overview',
-                  style: theme.textTheme.headlineLarge?.copyWith(
-                    color: cs.primary,
-                    fontWeight: FontWeight.bold,
+                const Spacer(),
+                if (!isCurrentMonth)
+                  TextButton.icon(
+                    onPressed: () =>
+                        ref.read(monthProvider.notifier).goToCurrentMonth(),
+                    icon: const Icon(Icons.my_location_outlined, size: 18),
+                    label: const Text('This Month'),
                   ),
-                ),
-                const SizedBox(height: Spacing.sm),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      currentMonthLabel,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        color: cs.onSurfaceVariant,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    if (!isCurrentMonth)
-                      TextButton.icon(
-                        onPressed: () =>
-                            ref.read(monthProvider.notifier).goToCurrentMonth(),
-                        icon: const Icon(Icons.my_location_outlined, size: 18),
-                        label: const Text('Go to This Month'),
-                      ),
-                  ],
-                ),
               ],
             ),
           ),
