@@ -328,66 +328,75 @@ class _EntryScreenState extends ConsumerState<EntryScreen>
           ],
         ),
         const SizedBox(height: Spacing.sm),
-        // ── Responsive layout: GridView for mobile, Wrap for web ──
+        // ── Responsive layout: 3-column dynamic wrap for mobile, free wrap for web ──
         if (isMobile)
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 3,
-              childAspectRatio: 1.3,
-              crossAxisSpacing: Spacing.sm,
-              mainAxisSpacing: Spacing.sm,
-            ),
-            itemCount: categories.length + 1,
-            itemBuilder: (ctx, index) {
-              if (index == categories.length) {
-                return GestureDetector(
-                  onTap: onAddCategory,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(AppRadius.md),
-                      border: Border.all(
-                        color: cs.primary.withValues(alpha: 0.45),
+          LayoutBuilder(
+            builder: (ctx, constraints) {
+              final chipW =
+                  (constraints.maxWidth - Spacing.sm * 2) / 3;
+              return Wrap(
+                spacing: Spacing.sm,
+                runSpacing: Spacing.sm,
+                children: [
+                  ...categories.map((item) {
+                    final isSelected = selected.contains(item);
+                    final emoji = emojiMap.containsKey(item)
+                        ? emojiMap[item]!
+                        : (isMood
+                            ? moodEmojiForLabel(item)
+                            : activityIconForLabel(item));
+                    final chipColor = Color(
+                      isMood
+                          ? moodColorHexForLabel(item)
+                          : activityColorHexForLabel(item),
+                    );
+                    return SizedBox(
+                      width: chipW,
+                      child: _buildMobileChip(
+                        item: item,
+                        isSelected: isSelected,
+                        emoji: emoji,
+                        chipColor: chipColor,
+                        isEditing: isEditing,
+                        onTap: () => onChipTap(item),
+                        onRemove: () => onChipRemove(item),
                       ),
-                      color: cs.primary.withValues(alpha: 0.06),
-                    ),
-                    child: Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.add_rounded, size: 16, color: cs.primary),
-                          const SizedBox(height: Spacing.xxs),
-                          Text(
-                            'Add',
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              color: cs.primary,
-                              fontWeight: FontWeight.w600,
-                            ),
+                    );
+                  }),
+                  SizedBox(
+                    width: chipW,
+                    child: GestureDetector(
+                      onTap: onAddCategory,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(AppRadius.md),
+                          border: Border.all(
+                            color: cs.primary.withValues(alpha: 0.45),
                           ),
-                        ],
+                          color: cs.primary.withValues(alpha: 0.06),
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: Spacing.sm,
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.add_rounded,
+                                size: 16, color: cs.primary),
+                            const SizedBox(width: Spacing.xs),
+                            Text(
+                              'Add',
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                color: cs.primary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
-                );
-              }
-              final item = categories[index];
-              return _buildCategoryChip(
-                item: item,
-                isSelected: selected.contains(item),
-                emoji: emojiMap.containsKey(item)
-                    ? emojiMap[item]!
-                    : (isMood
-                        ? moodEmojiForLabel(item)
-                        : activityIconForLabel(item)),
-                chipColor: Color(
-                  isMood
-                      ? moodColorHexForLabel(item)
-                      : activityColorHexForLabel(item),
-                ),
-                isEditing: isEditing,
-                onTap: () => onChipTap(item),
-                onRemove: () => onChipRemove(item),
+                ],
               );
             },
           )
@@ -501,6 +510,91 @@ class _EntryScreenState extends ConsumerState<EntryScreen>
                     color: isSelected ? chipColor : cs.onSurfaceVariant,
                     fontWeight:
                         isSelected ? FontWeight.w600 : FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        if (isEditing)
+          Positioned(
+            top: -6,
+            right: -6,
+            child: GestureDetector(
+              onTap: onRemove,
+              child: Container(
+                width: 18,
+                height: 18,
+                decoration: BoxDecoration(
+                  color: cs.surface,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: cs.outlineVariant),
+                ),
+                child: Icon(
+                  Icons.close_rounded,
+                  size: 12,
+                  color: cs.onSurfaceVariant,
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildMobileChip({
+    required String item,
+    required bool isSelected,
+    required String emoji,
+    required Color chipColor,
+    required bool isEditing,
+    required VoidCallback onTap,
+    required VoidCallback onRemove,
+  }) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        GestureDetector(
+          onTap: onTap,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            curve: Curves.easeOutCubic,
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(
+              horizontal: Spacing.sm,
+              vertical: Spacing.sm,
+            ),
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? chipColor.withValues(alpha: 0.14)
+                  : cs.surfaceContainerHighest.withValues(alpha: 0.45),
+              borderRadius: BorderRadius.circular(AppRadius.md),
+              border: Border.all(
+                color: isSelected
+                    ? chipColor
+                    : cs.outlineVariant.withValues(alpha: 0.7),
+                width: isSelected ? 1.5 : 1,
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(emoji, style: const TextStyle(fontSize: 15)),
+                const SizedBox(width: Spacing.xs),
+                Flexible(
+                  child: Text(
+                    item,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: isSelected ? chipColor : cs.onSurfaceVariant,
+                      fontWeight:
+                          isSelected ? FontWeight.w600 : FontWeight.w500,
+                      fontSize: 11,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
                   ),
                 ),
               ],
