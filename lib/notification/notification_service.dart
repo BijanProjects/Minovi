@@ -1,9 +1,11 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:chronosense/domain/model/models.dart';
 import 'package:chronosense/util/time_utils.dart';
+import 'package:go_router/go_router.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
@@ -23,6 +25,9 @@ class NotificationService {
   static const _channelId = 'chronosense_interval';
   static const _channelName = 'Interval Reminders';
   static const _channelDesc = 'Notifications at each check-in interval';
+
+  /// Set by the app after router is initialized
+  static GlobalKey<NavigatorState>? _navigatorKey;
 
   var _tzInitialized = false;
 
@@ -121,6 +126,11 @@ class NotificationService {
 
       final body = 'How was ${TimeUtils.formatTimeRange(startTime, endTime)}?';
 
+      // Format date as ISO date (YYYY-MM-DD)
+      final dateStr =
+          '${nextFire.year.toString().padLeft(4, '0')}-${nextFire.month.toString().padLeft(2, '0')}-${nextFire.day.toString().padLeft(2, '0')}';
+      final payload = '$dateStr:$startTime:$endTime';
+
       if (kIsWeb) {
         _webScheduler.schedule(
           id: id,
@@ -133,6 +143,7 @@ class NotificationService {
           id: id,
           title: 'Time to reflect ✨',
           body: body,
+          payload: payload,
           scheduledDate: tz.TZDateTime.from(nextFire, tz.local),
           notificationDetails: const NotificationDetails(
             android: AndroidNotificationDetails(
@@ -186,5 +197,26 @@ class NotificationService {
     _tzInitialized = true;
   }
 
-  void _onNotificationTap(NotificationResponse response) {}
+  static void setNavigatorKey(GlobalKey<NavigatorState> key) {
+    _navigatorKey = key;
+  }
+
+  void _onNotificationTap(NotificationResponse response) {
+    // Extract payload: "date:startTime:endTime"
+    final payload = response.payload;
+    if (payload == null || payload.isEmpty) return;
+
+    final parts = payload.split(':');
+    if (parts.length != 3) return;
+
+    final date = parts[0];
+    final startTime = parts[1];
+    final endTime = parts[2];
+
+    final context = _navigatorKey?.currentContext;
+    if (context != null) {
+      context.push('/entry/$date/$startTime/$endTime');
+    }
+  }
 }
+

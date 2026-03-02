@@ -7,8 +7,11 @@ import 'package:chronosense/ui/screens/entry/entry_screen.dart';
 import 'package:chronosense/ui/screens/month/month_screen.dart';
 import 'package:chronosense/ui/screens/settings/settings_screen.dart';
 
+final navigatorKey = GlobalKey<NavigatorState>();
+
 final appRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
+    navigatorKey: navigatorKey,
     initialLocation: '/day',
     routes: [
       // ── Shell route for bottom nav ──

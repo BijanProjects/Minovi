@@ -29,6 +29,9 @@ void main() async {
   final prefs = await UserPreferencesStore.instance.load();
   await NotificationService.instance.scheduleFromPreferences(prefs);
 
+  // Set navigator key for notification handling
+  NotificationService.setNavigatorKey(navigatorKey);
+
   runApp(const ProviderScope(child: MinoviApp()));
 }
 
