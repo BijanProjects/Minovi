@@ -280,6 +280,8 @@ class _EntryScreenState extends ConsumerState<EntryScreen>
   }) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 600;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -326,125 +328,207 @@ class _EntryScreenState extends ConsumerState<EntryScreen>
           ],
         ),
         const SizedBox(height: Spacing.sm),
-        // ── Compact wrap chips ──
-        Wrap(
-          spacing: Spacing.sm,
-          runSpacing: Spacing.sm,
-          children: [
-            ...categories.map((item) {
-              final isSelected = selected.contains(item);
-              final emoji = emojiMap.containsKey(item)
-                  ? emojiMap[item]!
-                  : (isMood
-                      ? moodEmojiForLabel(item)
-                      : activityIconForLabel(item));
-              final chipColor = Color(
-                isMood
-                    ? moodColorHexForLabel(item)
-                    : activityColorHexForLabel(item),
-              );
-              return Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  GestureDetector(
-                    onTap: () => onChipTap(item),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 180),
-                      curve: Curves.easeOutCubic,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: Spacing.md,
-                        vertical: Spacing.sm,
+        // ── Responsive layout: GridView for mobile, Wrap for web ──
+        if (isMobile)
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 3,
+              childAspectRatio: 1.3,
+              crossAxisSpacing: Spacing.sm,
+              mainAxisSpacing: Spacing.sm,
+            ),
+            itemCount: categories.length + 1,
+            itemBuilder: (ctx, index) {
+              if (index == categories.length) {
+                return GestureDetector(
+                  onTap: onAddCategory,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                      border: Border.all(
+                        color: cs.primary.withValues(alpha: 0.45),
                       ),
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? chipColor.withValues(alpha: 0.14)
-                            : cs.surfaceContainerHighest
-                                .withValues(alpha: 0.45),
-                        borderRadius: BorderRadius.circular(AppRadius.md),
-                        border: Border.all(
-                          color: isSelected
-                              ? chipColor
-                              : cs.outlineVariant.withValues(alpha: 0.7),
-                          width: isSelected ? 1.5 : 1,
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
+                      color: cs.primary.withValues(alpha: 0.06),
+                    ),
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text(emoji, style: const TextStyle(fontSize: 16)),
-                          const SizedBox(width: Spacing.xs),
+                          Icon(Icons.add_rounded, size: 16, color: cs.primary),
+                          const SizedBox(height: Spacing.xxs),
                           Text(
-                            item,
-                            style: theme.textTheme.labelMedium?.copyWith(
-                              color: isSelected
-                                  ? chipColor
-                                  : cs.onSurfaceVariant,
-                              fontWeight: isSelected
-                                  ? FontWeight.w600
-                                  : FontWeight.w500,
+                            'Add',
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: cs.primary,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ],
                       ),
                     ),
                   ),
-                  if (isEditing)
-                    Positioned(
-                      top: -6,
-                      right: -6,
-                      child: GestureDetector(
-                        onTap: () => onChipRemove(item),
-                        child: Container(
-                          width: 18,
-                          height: 18,
-                          decoration: BoxDecoration(
-                            color: cs.surface,
-                            shape: BoxShape.circle,
-                            border: Border.all(color: cs.outlineVariant),
-                          ),
-                          child: Icon(
-                            Icons.close_rounded,
-                            size: 12,
-                            color: cs.onSurfaceVariant,
-                          ),
+                );
+              }
+              final item = categories[index];
+              return _buildCategoryChip(
+                item: item,
+                isSelected: selected.contains(item),
+                emoji: emojiMap.containsKey(item)
+                    ? emojiMap[item]!
+                    : (isMood
+                        ? moodEmojiForLabel(item)
+                        : activityIconForLabel(item)),
+                chipColor: Color(
+                  isMood
+                      ? moodColorHexForLabel(item)
+                      : activityColorHexForLabel(item),
+                ),
+                isEditing: isEditing,
+                onTap: () => onChipTap(item),
+                onRemove: () => onChipRemove(item),
+              );
+            },
+          )
+        else
+          Wrap(
+            spacing: Spacing.sm,
+            runSpacing: Spacing.sm,
+            children: [
+              ...categories.map((item) {
+                final isSelected = selected.contains(item);
+                final emoji = emojiMap.containsKey(item)
+                    ? emojiMap[item]!
+                    : (isMood
+                        ? moodEmojiForLabel(item)
+                        : activityIconForLabel(item));
+                final chipColor = Color(
+                  isMood
+                      ? moodColorHexForLabel(item)
+                      : activityColorHexForLabel(item),
+                );
+                return _buildCategoryChip(
+                  item: item,
+                  isSelected: isSelected,
+                  emoji: emoji,
+                  chipColor: chipColor,
+                  isEditing: isEditing,
+                  onTap: () => onChipTap(item),
+                  onRemove: () => onChipRemove(item),
+                );
+              }),
+              GestureDetector(
+                onTap: onAddCategory,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: Spacing.md,
+                    vertical: Spacing.sm,
+                  ),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                    border: Border.all(
+                      color: cs.primary.withValues(alpha: 0.45),
+                    ),
+                    color: cs.primary.withValues(alpha: 0.06),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.add_rounded, size: 16, color: cs.primary),
+                      const SizedBox(width: Spacing.xs),
+                      Text(
+                        'Add',
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          color: cs.primary,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
-                    ),
-                ],
-              );
-            }),
-            GestureDetector(
-              onTap: onAddCategory,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: Spacing.md,
-                  vertical: Spacing.sm,
-                ),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(AppRadius.md),
-                  border: Border.all(
-                    color: cs.primary.withValues(alpha: 0.45),
+                    ],
                   ),
-                  color: cs.primary.withValues(alpha: 0.06),
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.add_rounded, size: 16, color: cs.primary),
-                    const SizedBox(width: Spacing.xs),
-                    Text(
-                      'Add',
-                      style: theme.textTheme.labelMedium?.copyWith(
-                        color: cs.primary,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
+              ),
+            ],
+          ),
+      ],
+    );
+  }
+
+  Widget _buildCategoryChip({
+    required String item,
+    required bool isSelected,
+    required String emoji,
+    required Color chipColor,
+    required bool isEditing,
+    required VoidCallback onTap,
+    required VoidCallback onRemove,
+  }) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        GestureDetector(
+          onTap: onTap,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            curve: Curves.easeOutCubic,
+            padding: const EdgeInsets.symmetric(
+              horizontal: Spacing.md,
+              vertical: Spacing.sm,
+            ),
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? chipColor.withValues(alpha: 0.14)
+                  : cs.surfaceContainerHighest.withValues(alpha: 0.45),
+              borderRadius: BorderRadius.circular(AppRadius.md),
+              border: Border.all(
+                color: isSelected
+                    ? chipColor
+                    : cs.outlineVariant.withValues(alpha: 0.7),
+                width: isSelected ? 1.5 : 1,
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(emoji, style: const TextStyle(fontSize: 16)),
+                const SizedBox(width: Spacing.xs),
+                Text(
+                  item,
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: isSelected ? chipColor : cs.onSurfaceVariant,
+                    fontWeight:
+                        isSelected ? FontWeight.w600 : FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        if (isEditing)
+          Positioned(
+            top: -6,
+            right: -6,
+            child: GestureDetector(
+              onTap: onRemove,
+              child: Container(
+                width: 18,
+                height: 18,
+                decoration: BoxDecoration(
+                  color: cs.surface,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: cs.outlineVariant),
+                ),
+                child: Icon(
+                  Icons.close_rounded,
+                  size: 12,
+                  color: cs.onSurfaceVariant,
                 ),
               ),
             ),
-          ],
-        ),
+          ),
       ],
     );
   }
