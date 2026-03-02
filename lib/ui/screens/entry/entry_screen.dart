@@ -32,6 +32,22 @@ class _EntryScreenState extends ConsumerState<EntryScreen>
   bool _isEditingMoods = false;
   bool _isEditingActions = false;
 
+  static const _moodEmojis = [
+    '😊', '😢', '😡', '😰', '😌', '😴', '🥳', '😔', '😍', '😎',
+    '🤔', '😩', '😤', '🥺', '😅', '🫠', '😒', '🤩', '😬', '🤗',
+    '😓', '😶', '😑', '🥹', '💀', '😇', '🫡', '😵', '🤯', '🫣',
+    '😮', '😂', '🥰', '🫢', '😳', '🤢', '🤧', '😷', '🥶', '🥵',
+    '😠', '🤬', '😈', '🫥', '😪', '🤤', '😋', '🫤', '🙄', '😏',
+  ];
+
+  static const _actionEmojis = [
+    '💼', '📚', '💪', '🎨', '🎮', '🍽️', '🚗', '🛌', '🤝', '🏃',
+    '🧘', '📱', '🎵', '🛍️', '☕', '🏠', '✈️', '🎯', '📝', '🐕',
+    '💊', '🌿', '🏋️', '🎬', '🧹', '🖥️', '🤸', '🚴', '🍳', '📞',
+    '🧑‍💻', '🎧', '📖', '🧪', '🪴', '🎤', '🛠️', '🚿', '🧑‍🍳', '💇',
+    '🧑‍⚕️', '🗣️', '📸', '🎭', '🚶', '🛒', '✍️', '🧑‍🏫', '🎲', '🧳',
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -174,6 +190,8 @@ class _EntryScreenState extends ConsumerState<EntryScreen>
                               leadingIcon: Icons.edit_outlined,
                               selected: state.moods,
                               categories: state.moodCategories,
+                              emojiMap: state.moodEmojiMap,
+                              isMood: true,
                               isEditing: _isEditingMoods,
                               onToggleEditing: () {
                                 setState(
@@ -181,14 +199,12 @@ class _EntryScreenState extends ConsumerState<EntryScreen>
                               },
                               onChipTap: notifier.toggleMoodSelection,
                               onChipRemove: notifier.removeMoodCategory,
-                              onAddCategory: () => _showAddCategoryDialog(
+                              onAddCategory: () => _showAddCategorySheet(
                                 context: context,
                                 title: 'Add emotion',
-                                hint: 'Type a new emotion',
+                                emojiOptions: _moodEmojis,
                                 onSubmit: notifier.addMoodCategory,
                               ),
-                              itemBuilder: (label) =>
-                                  '${moodEmojiForLabel(label)} $label',
                               maxSelectionText: '${state.moods.length} / 3',
                             ),
 
@@ -200,6 +216,8 @@ class _EntryScreenState extends ConsumerState<EntryScreen>
                               leadingIcon: Icons.edit_note_outlined,
                               selected: state.tags,
                               categories: state.actionCategories,
+                              emojiMap: state.actionEmojiMap,
+                              isMood: false,
                               isEditing: _isEditingActions,
                               onToggleEditing: () {
                                 setState(() =>
@@ -207,14 +225,12 @@ class _EntryScreenState extends ConsumerState<EntryScreen>
                               },
                               onChipTap: notifier.toggleTagSelection,
                               onChipRemove: notifier.removeActionCategory,
-                              onAddCategory: () => _showAddCategoryDialog(
+                              onAddCategory: () => _showAddCategorySheet(
                                 context: context,
-                                title: 'Add action',
-                                hint: 'Type a new action',
+                                title: 'Add activity',
+                                emojiOptions: _actionEmojis,
                                 onSubmit: notifier.addActionCategory,
                               ),
-                              itemBuilder: (label) =>
-                                  '${activityIconForLabel(label)} $label',
                             ),
 
                             const SizedBox(height: Spacing.xxxl),
@@ -253,12 +269,13 @@ class _EntryScreenState extends ConsumerState<EntryScreen>
     required IconData leadingIcon,
     required List<String> selected,
     required List<String> categories,
+    required Map<String, String> emojiMap,
+    required bool isMood,
     required bool isEditing,
     required VoidCallback onToggleEditing,
     required ValueChanged<String> onChipTap,
     required Future<void> Function(String) onChipRemove,
     required VoidCallback onAddCategory,
-    required String Function(String) itemBuilder,
     String? maxSelectionText,
   }) {
     final theme = Theme.of(context);
@@ -267,8 +284,16 @@ class _EntryScreenState extends ConsumerState<EntryScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // ── Section header ──
         Row(
           children: [
+            Text(
+              title,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(width: Spacing.xs),
             IconButton(
               onPressed: onToggleEditing,
               visualDensity: VisualDensity.compact,
@@ -277,12 +302,6 @@ class _EntryScreenState extends ConsumerState<EntryScreen>
               icon: Icon(
                 isEditing ? Icons.done_rounded : leadingIcon,
                 color: cs.onSurfaceVariant,
-              ),
-            ),
-            Text(
-              title,
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w600,
               ),
             ),
             const Spacer(),
@@ -307,18 +326,23 @@ class _EntryScreenState extends ConsumerState<EntryScreen>
           ],
         ),
         const SizedBox(height: Spacing.sm),
+        // ── Compact wrap chips ──
         Wrap(
           spacing: Spacing.sm,
           runSpacing: Spacing.sm,
           children: [
             ...categories.map((item) {
               final isSelected = selected.contains(item);
+              final emoji = emojiMap.containsKey(item)
+                  ? emojiMap[item]!
+                  : (isMood
+                      ? moodEmojiForLabel(item)
+                      : activityIconForLabel(item));
               final chipColor = Color(
-                title.startsWith('How')
+                isMood
                     ? moodColorHexForLabel(item)
                     : activityColorHexForLabel(item),
               );
-
               return Stack(
                 clipBehavior: Clip.none,
                 children: [
@@ -344,13 +368,23 @@ class _EntryScreenState extends ConsumerState<EntryScreen>
                           width: isSelected ? 1.5 : 1,
                         ),
                       ),
-                      child: Text(
-                        itemBuilder(item),
-                        style: theme.textTheme.labelMedium?.copyWith(
-                          color: isSelected ? chipColor : cs.onSurfaceVariant,
-                          fontWeight:
-                              isSelected ? FontWeight.w600 : FontWeight.w500,
-                        ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(emoji, style: const TextStyle(fontSize: 16)),
+                          const SizedBox(width: Spacing.xs),
+                          Text(
+                            item,
+                            style: theme.textTheme.labelMedium?.copyWith(
+                              color: isSelected
+                                  ? chipColor
+                                  : cs.onSurfaceVariant,
+                              fontWeight: isSelected
+                                  ? FontWeight.w600
+                                  : FontWeight.w500,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -391,7 +425,7 @@ class _EntryScreenState extends ConsumerState<EntryScreen>
                   border: Border.all(
                     color: cs.primary.withValues(alpha: 0.45),
                   ),
-                  color: cs.primary.withValues(alpha: 0.08),
+                  color: cs.primary.withValues(alpha: 0.06),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -415,47 +449,148 @@ class _EntryScreenState extends ConsumerState<EntryScreen>
     );
   }
 
-  Future<void> _showAddCategoryDialog({
+  Future<void> _showAddCategorySheet({
     required BuildContext context,
     required String title,
-    required String hint,
-    required Future<void> Function(String) onSubmit,
+    required List<String> emojiOptions,
+    required Future<void> Function(String, String) onSubmit,
   }) async {
-    final input = TextEditingController();
-    await showDialog<void>(
+    final labelCtrl = TextEditingController();
+    String pickedEmoji = emojiOptions.first;
+
+    await showModalBottomSheet<void>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(title),
-        content: TextField(
-          controller: input,
-          autofocus: true,
-          textCapitalization: TextCapitalization.sentences,
-          decoration: InputDecoration(hintText: hint),
-          onSubmitted: (value) async {
-            final normalized = value.trim();
-            if (normalized.isEmpty) return;
-            await onSubmit(normalized);
-            if (context.mounted) Navigator.of(context).pop();
-          },
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () async {
-              final normalized = input.text.trim();
-              if (normalized.isEmpty) return;
-              await onSubmit(normalized);
-              if (context.mounted) Navigator.of(context).pop();
-            },
-            child: const Text('Add'),
-          ),
-        ],
+      isScrollControlled: true,
+      useSafeArea: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
+      ),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheetState) {
+          final theme = Theme.of(ctx);
+          final cs = theme.colorScheme;
+          final bottomInset = MediaQuery.of(ctx).viewInsets.bottom;
+
+          return SingleChildScrollView(
+            padding: EdgeInsets.fromLTRB(
+              Spacing.xl,
+              Spacing.lg,
+              Spacing.xl,
+              Spacing.lg + bottomInset,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: cs.outlineVariant,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: Spacing.lg),
+                Text(
+                  title,
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: Spacing.lg),
+                TextField(
+                  controller: labelCtrl,
+                  autofocus: true,
+                  textCapitalization: TextCapitalization.sentences,
+                  decoration: InputDecoration(
+                    prefixIcon: SizedBox(
+                      width: 48,
+                      height: 48,
+                      child: Center(
+                        child: Text(
+                          pickedEmoji,
+                          style: const TextStyle(fontSize: 22),
+                        ),
+                      ),
+                    ),
+                    prefixIconConstraints: const BoxConstraints(
+                      minWidth: 48,
+                      minHeight: 48,
+                    ),
+                    hintText: 'Name',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                    ),
+                  ),
+                  onSubmitted: (v) async {
+                    final name = v.trim();
+                    if (name.isEmpty) return;
+                    await onSubmit(name, pickedEmoji);
+                    if (ctx.mounted) Navigator.pop(ctx);
+                  },
+                ),
+                const SizedBox(height: Spacing.lg),
+                Text(
+                  'PICK AN EMOJI',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: cs.onSurfaceVariant,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 1.0,
+                  ),
+                ),
+                const SizedBox(height: Spacing.sm),
+                Wrap(
+                  spacing: Spacing.xs,
+                  runSpacing: Spacing.xs,
+                  children: emojiOptions.map((e) {
+                    final sel = e == pickedEmoji;
+                    return GestureDetector(
+                      onTap: () => setSheetState(() => pickedEmoji = e),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 150),
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: sel
+                              ? cs.primaryContainer
+                              : cs.surfaceContainerHighest,
+                          borderRadius: BorderRadius.circular(AppRadius.sm),
+                          border: sel
+                              ? Border.all(color: cs.primary, width: 2)
+                              : null,
+                        ),
+                        child: Center(
+                          child: Text(
+                            e,
+                            style: const TextStyle(fontSize: 22),
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: Spacing.xl),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: () async {
+                      final name = labelCtrl.text.trim();
+                      if (name.isEmpty) return;
+                      await onSubmit(name, pickedEmoji);
+                      if (ctx.mounted) Navigator.pop(ctx);
+                    },
+                    child: const Text('Add'),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
       ),
     );
-    input.dispose();
+    labelCtrl.dispose();
   }
 
   void _showDeleteConfirmation(BuildContext context, EntryNotifier notifier) {

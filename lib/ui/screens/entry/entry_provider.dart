@@ -18,6 +18,8 @@ class EntryUiState {
   final String endTime;
   final bool isSaved;
   final bool isDeleted;
+  final Map<String, String> moodEmojiMap;
+  final Map<String, String> actionEmojiMap;
 
   const EntryUiState({
     this.isLoading = true,
@@ -32,6 +34,8 @@ class EntryUiState {
     this.endTime = '',
     this.isSaved = false,
     this.isDeleted = false,
+    this.moodEmojiMap = const {},
+    this.actionEmojiMap = const {},
   });
 
   EntryUiState copyWith({
@@ -48,6 +52,8 @@ class EntryUiState {
     String? endTime,
     bool? isSaved,
     bool? isDeleted,
+    Map<String, String>? moodEmojiMap,
+    Map<String, String>? actionEmojiMap,
   }) {
     return EntryUiState(
       isLoading: isLoading ?? this.isLoading,
@@ -63,6 +69,8 @@ class EntryUiState {
       endTime: endTime ?? this.endTime,
       isSaved: isSaved ?? this.isSaved,
       isDeleted: isDeleted ?? this.isDeleted,
+      moodEmojiMap: moodEmojiMap ?? this.moodEmojiMap,
+      actionEmojiMap: actionEmojiMap ?? this.actionEmojiMap,
     );
   }
 }
@@ -71,7 +79,21 @@ class EntryUiState {
 class EntryNotifier extends Notifier<EntryUiState> {
   static const _moodCategoriesKey = 'entry_mood_categories';
   static const _actionCategoriesKey = 'entry_action_categories';
+  static const _moodEmojiMapKey = 'entry_mood_emoji_map';
+  static const _actionEmojiMapKey = 'entry_action_emoji_map';
   static const _maxMoodSelections = 3;
+
+  static Map<String, String> _parsePairs(List<String>? raw) {
+    final map = <String, String>{};
+    for (final item in raw ?? const []) {
+      final idx = item.indexOf(':::');
+      if (idx > 0) map[item.substring(0, idx)] = item.substring(idx + 3);
+    }
+    return map;
+  }
+
+  static List<String> _serializePairs(Map<String, String> m) =>
+      m.entries.map((e) => '${e.key}:::${e.value}').toList();
 
   @override
   EntryUiState build() => const EntryUiState();
@@ -100,15 +122,22 @@ class EntryNotifier extends Notifier<EntryUiState> {
                 .toSet()
                 .toList();
 
+    final moodEmojiMap = _parsePairs(prefs.getStringList(_moodEmojiMapKey));
+    final actionEmojiMap = _parsePairs(prefs.getStringList(_actionEmojiMapKey));
+
     state = state.copyWith(
       moodCategories: normalizedMoodCategories,
       actionCategories: normalizedActionCategories,
+      moodEmojiMap: moodEmojiMap,
+      actionEmojiMap: actionEmojiMap,
     );
   }
 
   Future<void> _saveCategoryOptions({
     List<String>? moodCategories,
     List<String>? actionCategories,
+    Map<String, String>? moodEmojiMap,
+    Map<String, String>? actionEmojiMap,
   }) async {
     final prefs = await SharedPreferences.getInstance();
     if (moodCategories != null) {
@@ -116,6 +145,12 @@ class EntryNotifier extends Notifier<EntryUiState> {
     }
     if (actionCategories != null) {
       await prefs.setStringList(_actionCategoriesKey, actionCategories);
+    }
+    if (moodEmojiMap != null) {
+      await prefs.setStringList(_moodEmojiMapKey, _serializePairs(moodEmojiMap));
+    }
+    if (actionEmojiMap != null) {
+      await prefs.setStringList(_actionEmojiMapKey, _serializePairs(actionEmojiMap));
     }
   }
 
@@ -215,24 +250,28 @@ class EntryNotifier extends Notifier<EntryUiState> {
     updateTags(current);
   }
 
-  Future<void> addMoodCategory(String mood) async {
+  Future<void> addMoodCategory(String mood, String emoji) async {
     final normalized = normalizeMoodLabel(mood);
     if (normalized.isEmpty) return;
     final categories = List<String>.from(state.moodCategories);
     if (categories.contains(normalized)) return;
     categories.add(normalized);
-    state = state.copyWith(moodCategories: categories);
-    await _saveCategoryOptions(moodCategories: categories);
+    final emojiMap = Map<String, String>.from(state.moodEmojiMap)
+      ..[normalized] = emoji;
+    state = state.copyWith(moodCategories: categories, moodEmojiMap: emojiMap);
+    await _saveCategoryOptions(moodCategories: categories, moodEmojiMap: emojiMap);
   }
 
-  Future<void> addActionCategory(String action) async {
+  Future<void> addActionCategory(String action, String emoji) async {
     final normalized = normalizeActivityLabel(action);
     if (normalized.isEmpty) return;
     final categories = List<String>.from(state.actionCategories);
     if (categories.contains(normalized)) return;
     categories.add(normalized);
-    state = state.copyWith(actionCategories: categories);
-    await _saveCategoryOptions(actionCategories: categories);
+    final emojiMap = Map<String, String>.from(state.actionEmojiMap)
+      ..[normalized] = emoji;
+    state = state.copyWith(actionCategories: categories, actionEmojiMap: emojiMap);
+    await _saveCategoryOptions(actionCategories: categories, actionEmojiMap: emojiMap);
   }
 
   Future<void> removeMoodCategory(String mood) async {
