@@ -4,14 +4,22 @@
 enum Mood {
   happy(emoji: '\u{1F60A}', label: 'Happy', colorHex: 0xFF10B981, sortOrder: 0),
   sad(emoji: '\u{1F622}', label: 'Sad', colorHex: 0xFF6366F1, sortOrder: 1),
-  excited(emoji: '\u{1F929}', label: 'Excited', colorHex: 0xFFEC4899, sortOrder: 2),
+  excited(
+      emoji: '\u{1F929}', label: 'Excited', colorHex: 0xFFEC4899, sortOrder: 2),
   angry(emoji: '\u{1F621}', label: 'Angry', colorHex: 0xFFEF4444, sortOrder: 3),
   calm(emoji: '\u{1F9D8}', label: 'Calm', colorHex: 0xFF14B8A6, sortOrder: 4),
-  anxious(emoji: '\u{1F61F}', label: 'Anxious', colorHex: 0xFFF59E0B, sortOrder: 5),
-  neutral(emoji: '\u{1F610}', label: 'Neutral', colorHex: 0xFF8B5CF6, sortOrder: 6),
-  ashamed(emoji: '\u{1F614}', label: 'Ashamed', colorHex: 0xFF78716C, sortOrder: 7),
+  anxious(
+      emoji: '\u{1F61F}', label: 'Anxious', colorHex: 0xFFF59E0B, sortOrder: 5),
+  neutral(
+      emoji: '\u{1F610}', label: 'Neutral', colorHex: 0xFF8B5CF6, sortOrder: 6),
+  ashamed(
+      emoji: '\u{1F614}', label: 'Ashamed', colorHex: 0xFF78716C, sortOrder: 7),
   tired(emoji: '\u{1F634}', label: 'Tired', colorHex: 0xFF94A3B8, sortOrder: 8),
-  stressed(emoji: '\u{1F624}', label: 'Stressed', colorHex: 0xFFF43F5E, sortOrder: 9);
+  stressed(
+      emoji: '\u{1F624}',
+      label: 'Stressed',
+      colorHex: 0xFFF43F5E,
+      sortOrder: 9);
 
   final String emoji;
   final String label;
@@ -30,6 +38,17 @@ enum Mood {
     try {
       return Mood.values.firstWhere(
         (m) => m.name.toLowerCase() == name.toLowerCase(),
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static Mood? fromLabel(String? label) {
+    if (label == null || label.isEmpty) return null;
+    try {
+      return Mood.values.firstWhere(
+        (m) => m.label.toLowerCase() == label.toLowerCase(),
       );
     } catch (_) {
       return null;
@@ -69,6 +88,53 @@ enum ActivityTag {
       return null;
     }
   }
+
+  static ActivityTag? fromName(String? name) {
+    if (name == null || name.isEmpty) return null;
+    try {
+      return ActivityTag.values.firstWhere(
+        (t) => t.name.toLowerCase() == name.toLowerCase(),
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+}
+
+String normalizeMoodLabel(String raw) {
+  final trimmed = raw.trim();
+  if (trimmed.isEmpty) return '';
+  final byName = Mood.fromName(trimmed);
+  if (byName != null) return byName.label;
+  return trimmed;
+}
+
+String moodEmojiForLabel(String label) {
+  final mood = Mood.fromLabel(label);
+  return mood?.emoji ?? '\u{1F642}';
+}
+
+int moodColorHexForLabel(String label) {
+  final mood = Mood.fromLabel(label);
+  return mood?.colorHex ?? 0xFF64748B;
+}
+
+String normalizeActivityLabel(String raw) {
+  final trimmed = raw.trim();
+  if (trimmed.isEmpty) return '';
+  final byName = ActivityTag.fromName(trimmed);
+  if (byName != null) return byName.label;
+  return trimmed;
+}
+
+String activityIconForLabel(String label) {
+  final tag = ActivityTag.fromLabel(label);
+  return tag?.icon ?? '\u{1F3F7}\u{FE0F}';
+}
+
+int activityColorHexForLabel(String label) {
+  final tag = ActivityTag.fromLabel(label);
+  return tag?.colorHex ?? 0xFF475569;
 }
 
 // ─── JournalEntry ───────────────────────────────────────────────────
@@ -76,10 +142,10 @@ class JournalEntry {
   final int? id;
   final DateTime date;
   final String startTime; // "HH:mm"
-  final String endTime;   // "HH:mm"
+  final String endTime; // "HH:mm"
   final String description;
-  final List<Mood> moods;
-  final List<ActivityTag> tags;
+  final List<String> moods;
+  final List<String> tags;
   final int createdAt; // millis
 
   const JournalEntry({
@@ -94,7 +160,7 @@ class JournalEntry {
   });
 
   /// Backward-compat: returns first mood or null.
-  Mood? get mood => moods.isNotEmpty ? moods.first : null;
+  String? get mood => moods.isNotEmpty ? moods.first : null;
 
   bool get hasContent =>
       description.isNotEmpty || moods.isNotEmpty || tags.isNotEmpty;
@@ -113,8 +179,8 @@ class JournalEntry {
     String? startTime,
     String? endTime,
     String? description,
-    List<Mood>? moods,
-    List<ActivityTag>? tags,
+    List<String>? moods,
+    List<String>? tags,
     int? createdAt,
   }) {
     return JournalEntry(
@@ -133,7 +199,7 @@ class JournalEntry {
 // ─── TimeSlot ───────────────────────────────────────────────────────
 class TimeSlot {
   final String startTime; // "HH:mm"
-  final String endTime;   // "HH:mm"
+  final String endTime; // "HH:mm"
   final JournalEntry? entry;
 
   const TimeSlot({
@@ -157,8 +223,8 @@ class TimeSlot {
 class DaySummary {
   final int totalSlots;
   final int filledSlots;
-  final Mood? dominantMood;
-  final List<ActivityTag> topTags;
+  final String? dominantMood;
+  final List<String> topTags;
   final double completionRate;
 
   const DaySummary({
@@ -175,13 +241,13 @@ class DaySummary {
     final rate = total > 0 ? filled.length / total : 0.0;
 
     // Dominant mood
-    final moodCounts = <Mood, int>{};
+    final moodCounts = <String, int>{};
     for (final slot in filled) {
-      for (final mood in slot.entry?.moods ?? <Mood>[]) {
+      for (final mood in slot.entry?.moods ?? <String>[]) {
         moodCounts[mood] = (moodCounts[mood] ?? 0) + 1;
       }
     }
-    Mood? dominant;
+    String? dominant;
     int maxCount = 0;
     moodCounts.forEach((mood, count) {
       if (count > maxCount) {
@@ -191,9 +257,9 @@ class DaySummary {
     });
 
     // Top tags
-    final tagCounts = <ActivityTag, int>{};
+    final tagCounts = <String, int>{};
     for (final slot in filled) {
-      for (final tag in slot.entry?.tags ?? <ActivityTag>[]) {
+      for (final tag in slot.entry?.tags ?? <String>[]) {
         tagCounts[tag] = (tagCounts[tag] ?? 0) + 1;
       }
     }
@@ -215,8 +281,8 @@ class DaySummary {
 class MonthInsight {
   final int totalEntries;
   final int activeDays;
-  final Map<ActivityTag, int> tagFrequency;
-  final Map<Mood, int> moodFrequency;
+  final Map<String, int> tagFrequency;
+  final Map<String, int> moodFrequency;
   final Set<int> daysWithEntries;
   final double averageCompletionRate;
 
@@ -229,14 +295,14 @@ class MonthInsight {
     required this.averageCompletionRate,
   });
 
-  ActivityTag? get topActivity {
+  String? get topActivity {
     if (tagFrequency.isEmpty) return null;
     return tagFrequency.entries
         .reduce((a, b) => a.value >= b.value ? a : b)
         .key;
   }
 
-  Mood? get dominantMood {
+  String? get dominantMood {
     if (moodFrequency.isEmpty) return null;
     return moodFrequency.entries
         .reduce((a, b) => a.value >= b.value ? a : b)
@@ -259,8 +325,8 @@ class MonthInsight {
     }
 
     final dayEntries = <int, int>{};
-    final tagFreq = <ActivityTag, int>{};
-    final moodFreq = <Mood, int>{};
+    final tagFreq = <String, int>{};
+    final moodFreq = <String, int>{};
     final days = <int>{};
 
     for (final entry in entries) {
@@ -334,7 +400,9 @@ class UserPreferences {
   int get wakingMinutes {
     final wakeMin = wakeHour * 60 + wakeMinute;
     final sleepMin = sleepHour * 60 + sleepMinute;
-    return sleepMin > wakeMin ? sleepMin - wakeMin : (1440 - wakeMin) + sleepMin;
+    return sleepMin > wakeMin
+        ? sleepMin - wakeMin
+        : (1440 - wakeMin) + sleepMin;
   }
 
   int get totalSlots => (wakingMinutes / intervalMinutes).floor();
@@ -358,7 +426,8 @@ class UserPreferences {
       intervalMinutes: intervalMinutes ?? this.intervalMinutes,
       notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
       dynamicColors: dynamicColors ?? this.dynamicColors,
-      previousIntervalMinutes: previousIntervalMinutes ?? this.previousIntervalMinutes,
+      previousIntervalMinutes:
+          previousIntervalMinutes ?? this.previousIntervalMinutes,
       intervalChangedAt: intervalChangedAt ?? this.intervalChangedAt,
     );
   }

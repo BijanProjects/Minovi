@@ -118,7 +118,6 @@ class _DayScreenState extends ConsumerState<DayScreen>
     final state = ref.watch(dayProvider);
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
-    final currentDayLabel = state.isToday ? 'Today' : state.formattedDate;
 
     return SafeArea(
       child: Column(
@@ -132,62 +131,45 @@ class _DayScreenState extends ConsumerState<DayScreen>
               Spacing.xl,
               Spacing.sm,
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Row(
               children: [
-                Row(
-                  children: [
-                    Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(AppRadius.sm),
-                        boxShadow: [
-                          BoxShadow(
-                            color: cs.primary.withValues(alpha: 0.15),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(AppRadius.sm),
+                    boxShadow: [
+                      BoxShadow(
+                        color: cs.primary.withValues(alpha: 0.15),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
                       ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(AppRadius.sm),
-                        child: Image.asset(
-                          'assets/icon/app_icon.png',
-                          fit: BoxFit.cover,
-                        ),
-                      ),
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(AppRadius.sm),
+                    child: Image.asset(
+                      'assets/icon/app_icon.png',
+                      fit: BoxFit.cover,
                     ),
-                    const SizedBox(width: Spacing.md),
-                    Text(
-                      'Minovi',
-                      style: theme.textTheme.headlineLarge?.copyWith(
-                        color: cs.primary,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
-                const SizedBox(height: Spacing.sm),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      currentDayLabel,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        color: cs.onSurfaceVariant,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    if (!state.isToday)
-                      TextButton.icon(
-                        onPressed: () =>
-                            ref.read(dayProvider.notifier).goToToday(),
-                        icon: const Icon(Icons.my_location_outlined, size: 18),
-                        label: const Text('Go to Today'),
-                      ),
-                  ],
+                const SizedBox(width: Spacing.md),
+                Text(
+                  'Minovi',
+                  style: theme.textTheme.headlineLarge?.copyWith(
+                    color: cs.primary,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
+                const Spacer(),
+                if (!state.isToday)
+                  TextButton.icon(
+                    onPressed: () =>
+                        ref.read(dayProvider.notifier).goToToday(),
+                    icon: const Icon(Icons.my_location_outlined, size: 18),
+                    label: const Text('Today'),
+                  ),
               ],
             ),
           ),

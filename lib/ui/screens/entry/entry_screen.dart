@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:chronosense/ui/screens/entry/entry_provider.dart';
-import 'package:chronosense/ui/components/mood_selector.dart';
-import 'package:chronosense/ui/components/tag_selector.dart';
 import 'package:chronosense/ui/design/tokens.dart';
 import 'package:chronosense/util/time_utils.dart';
+import 'package:chronosense/domain/model/models.dart';
 
 class EntryScreen extends ConsumerStatefulWidget {
   final String date;
@@ -30,6 +29,24 @@ class _EntryScreenState extends ConsumerState<EntryScreen>
   late final AnimationController _enterAnim;
   late final Animation<double> _fadeIn;
   late final Animation<Offset> _slideUp;
+  bool _isEditingMoods = false;
+  bool _isEditingActions = false;
+
+  static const _moodEmojis = [
+    '😊', '😢', '😡', '😰', '😌', '😴', '🥳', '😔', '😍', '😎',
+    '🤔', '😩', '😤', '🥺', '😅', '🫠', '😒', '🤩', '😬', '🤗',
+    '😓', '😶', '😑', '🥹', '💀', '😇', '🫡', '😵', '🤯', '🫣',
+    '😮', '😂', '🥰', '🫢', '😳', '🤢', '🤧', '😷', '🥶', '🥵',
+    '😠', '🤬', '😈', '🫥', '😪', '🤤', '😋', '🫤', '🙄', '😏',
+  ];
+
+  static const _actionEmojis = [
+    '💼', '📚', '💪', '🎨', '🎮', '🍽️', '🚗', '🛌', '🤝', '🏃',
+    '🧘', '📱', '🎵', '🛍️', '☕', '🏠', '✈️', '🎯', '📝', '🐕',
+    '💊', '🌿', '🏋️', '🎬', '🧹', '🖥️', '🤸', '🚴', '🍳', '📞',
+    '🧑‍💻', '🎧', '📖', '🧪', '🪴', '🎤', '🛠️', '🚿', '🧑‍🍳', '💇',
+    '🧑‍⚕️', '🗣️', '📸', '🎭', '🚶', '🛒', '✍️', '🧑‍🏫', '🎲', '🧳',
+  ];
 
   @override
   void initState() {
@@ -79,7 +96,8 @@ class _EntryScreenState extends ConsumerState<EntryScreen>
     final cs = theme.colorScheme;
 
     // Sync text controller
-    if (_descController.text != state.description && !_descController.text.isNotEmpty) {
+    if (_descController.text != state.description &&
+        !_descController.text.isNotEmpty) {
       _descController.text = state.description;
     }
 
@@ -153,9 +171,11 @@ class _EntryScreenState extends ConsumerState<EntryScreen>
                               minLines: 3,
                               maxLength: 5000,
                               decoration: InputDecoration(
-                                hintText: 'Describe what you did, how it went, any thoughts...',
+                                hintText:
+                                    'Describe what you did, how it went, any thoughts...',
                                 hintStyle: TextStyle(
-                                  color: cs.onSurfaceVariant.withValues(alpha: 0.5),
+                                  color: cs.onSurfaceVariant
+                                      .withValues(alpha: 0.5),
                                 ),
                                 counterText: '',
                               ),
@@ -164,25 +184,53 @@ class _EntryScreenState extends ConsumerState<EntryScreen>
 
                             const SizedBox(height: Spacing.xl),
 
-                            // Mood
-                            MoodSelector(
+                            _buildCategorySection(
+                              context: context,
+                              title: 'How did you feel?',
+                              leadingIcon: Icons.edit_outlined,
                               selected: state.moods,
-                              onChanged: notifier.updateMoods,
+                              categories: state.moodCategories,
+                              emojiMap: state.moodEmojiMap,
+                              isMood: true,
+                              isEditing: _isEditingMoods,
+                              onToggleEditing: () {
+                                setState(
+                                    () => _isEditingMoods = !_isEditingMoods);
+                              },
+                              onChipTap: notifier.toggleMoodSelection,
+                              onChipRemove: notifier.removeMoodCategory,
+                              onAddCategory: () => _showAddCategorySheet(
+                                context: context,
+                                title: 'Add emotion',
+                                emojiOptions: _moodEmojis,
+                                onSubmit: notifier.addMoodCategory,
+                              ),
+                              maxSelectionText: '${state.moods.length} / 3',
                             ),
 
                             const SizedBox(height: Spacing.xl),
 
-                            // Tags
-                            Text(
-                              'What were you doing?',
-                              style: theme.textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const SizedBox(height: Spacing.md),
-                            TagSelector(
+                            _buildCategorySection(
+                              context: context,
+                              title: 'What were you doing?',
+                              leadingIcon: Icons.edit_note_outlined,
                               selected: state.tags,
-                              onChanged: notifier.updateTags,
+                              categories: state.actionCategories,
+                              emojiMap: state.actionEmojiMap,
+                              isMood: false,
+                              isEditing: _isEditingActions,
+                              onToggleEditing: () {
+                                setState(() =>
+                                    _isEditingActions = !_isEditingActions);
+                              },
+                              onChipTap: notifier.toggleTagSelection,
+                              onChipRemove: notifier.removeActionCategory,
+                              onAddCategory: () => _showAddCategorySheet(
+                                context: context,
+                                title: 'Add activity',
+                                emojiOptions: _actionEmojis,
+                                onSubmit: notifier.addActionCategory,
+                              ),
                             ),
 
                             const SizedBox(height: Spacing.xxxl),
@@ -215,6 +263,336 @@ class _EntryScreenState extends ConsumerState<EntryScreen>
     );
   }
 
+  Widget _buildCategorySection({
+    required BuildContext context,
+    required String title,
+    required IconData leadingIcon,
+    required List<String> selected,
+    required List<String> categories,
+    required Map<String, String> emojiMap,
+    required bool isMood,
+    required bool isEditing,
+    required VoidCallback onToggleEditing,
+    required ValueChanged<String> onChipTap,
+    required Future<void> Function(String) onChipRemove,
+    required VoidCallback onAddCategory,
+    String? maxSelectionText,
+  }) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // ── Section header ──
+        Row(
+          children: [
+            Text(
+              title,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(width: Spacing.xs),
+            IconButton(
+              onPressed: onToggleEditing,
+              visualDensity: VisualDensity.compact,
+              iconSize: 18,
+              tooltip: isEditing ? 'Done editing' : 'Edit categories',
+              icon: Icon(
+                isEditing ? Icons.done_rounded : leadingIcon,
+                color: cs.onSurfaceVariant,
+              ),
+            ),
+            const Spacer(),
+            if (maxSelectionText != null)
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: Spacing.sm,
+                  vertical: Spacing.xxs,
+                ),
+                decoration: BoxDecoration(
+                  color: cs.primary.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(AppRadius.pill),
+                ),
+                child: Text(
+                  maxSelectionText,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: cs.primary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: Spacing.sm),
+        // ── Compact wrap chips ──
+        Wrap(
+          spacing: Spacing.sm,
+          runSpacing: Spacing.sm,
+          children: [
+            ...categories.map((item) {
+              final isSelected = selected.contains(item);
+              final emoji = emojiMap.containsKey(item)
+                  ? emojiMap[item]!
+                  : (isMood
+                      ? moodEmojiForLabel(item)
+                      : activityIconForLabel(item));
+              final chipColor = Color(
+                isMood
+                    ? moodColorHexForLabel(item)
+                    : activityColorHexForLabel(item),
+              );
+              return Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  GestureDetector(
+                    onTap: () => onChipTap(item),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      curve: Curves.easeOutCubic,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: Spacing.md,
+                        vertical: Spacing.sm,
+                      ),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? chipColor.withValues(alpha: 0.14)
+                            : cs.surfaceContainerHighest
+                                .withValues(alpha: 0.45),
+                        borderRadius: BorderRadius.circular(AppRadius.md),
+                        border: Border.all(
+                          color: isSelected
+                              ? chipColor
+                              : cs.outlineVariant.withValues(alpha: 0.7),
+                          width: isSelected ? 1.5 : 1,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(emoji, style: const TextStyle(fontSize: 16)),
+                          const SizedBox(width: Spacing.xs),
+                          Text(
+                            item,
+                            style: theme.textTheme.labelMedium?.copyWith(
+                              color: isSelected
+                                  ? chipColor
+                                  : cs.onSurfaceVariant,
+                              fontWeight: isSelected
+                                  ? FontWeight.w600
+                                  : FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  if (isEditing)
+                    Positioned(
+                      top: -6,
+                      right: -6,
+                      child: GestureDetector(
+                        onTap: () => onChipRemove(item),
+                        child: Container(
+                          width: 18,
+                          height: 18,
+                          decoration: BoxDecoration(
+                            color: cs.surface,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: cs.outlineVariant),
+                          ),
+                          child: Icon(
+                            Icons.close_rounded,
+                            size: 12,
+                            color: cs.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              );
+            }),
+            GestureDetector(
+              onTap: onAddCategory,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: Spacing.md,
+                  vertical: Spacing.sm,
+                ),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                  border: Border.all(
+                    color: cs.primary.withValues(alpha: 0.45),
+                  ),
+                  color: cs.primary.withValues(alpha: 0.06),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.add_rounded, size: 16, color: cs.primary),
+                    const SizedBox(width: Spacing.xs),
+                    Text(
+                      'Add',
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: cs.primary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Future<void> _showAddCategorySheet({
+    required BuildContext context,
+    required String title,
+    required List<String> emojiOptions,
+    required Future<void> Function(String, String) onSubmit,
+  }) async {
+    final labelCtrl = TextEditingController();
+    String pickedEmoji = emojiOptions.first;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
+      ),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheetState) {
+          final theme = Theme.of(ctx);
+          final cs = theme.colorScheme;
+          final bottomInset = MediaQuery.of(ctx).viewInsets.bottom;
+
+          return SingleChildScrollView(
+            padding: EdgeInsets.fromLTRB(
+              Spacing.xl,
+              Spacing.lg,
+              Spacing.xl,
+              Spacing.lg + bottomInset,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: cs.outlineVariant,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: Spacing.lg),
+                Text(
+                  title,
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: Spacing.lg),
+                TextField(
+                  controller: labelCtrl,
+                  autofocus: true,
+                  textCapitalization: TextCapitalization.sentences,
+                  decoration: InputDecoration(
+                    prefixIcon: SizedBox(
+                      width: 48,
+                      height: 48,
+                      child: Center(
+                        child: Text(
+                          pickedEmoji,
+                          style: const TextStyle(fontSize: 22),
+                        ),
+                      ),
+                    ),
+                    prefixIconConstraints: const BoxConstraints(
+                      minWidth: 48,
+                      minHeight: 48,
+                    ),
+                    hintText: 'Name',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                    ),
+                  ),
+                  onSubmitted: (v) async {
+                    final name = v.trim();
+                    if (name.isEmpty) return;
+                    await onSubmit(name, pickedEmoji);
+                    if (ctx.mounted) Navigator.pop(ctx);
+                  },
+                ),
+                const SizedBox(height: Spacing.lg),
+                Text(
+                  'PICK AN EMOJI',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: cs.onSurfaceVariant,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 1.0,
+                  ),
+                ),
+                const SizedBox(height: Spacing.sm),
+                Wrap(
+                  spacing: Spacing.xs,
+                  runSpacing: Spacing.xs,
+                  children: emojiOptions.map((e) {
+                    final sel = e == pickedEmoji;
+                    return GestureDetector(
+                      onTap: () => setSheetState(() => pickedEmoji = e),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 150),
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: sel
+                              ? cs.primaryContainer
+                              : cs.surfaceContainerHighest,
+                          borderRadius: BorderRadius.circular(AppRadius.sm),
+                          border: sel
+                              ? Border.all(color: cs.primary, width: 2)
+                              : null,
+                        ),
+                        child: Center(
+                          child: Text(
+                            e,
+                            style: const TextStyle(fontSize: 22),
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: Spacing.xl),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: () async {
+                      final name = labelCtrl.text.trim();
+                      if (name.isEmpty) return;
+                      await onSubmit(name, pickedEmoji);
+                      if (ctx.mounted) Navigator.pop(ctx);
+                    },
+                    child: const Text('Add'),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+    labelCtrl.dispose();
+  }
+
   void _showDeleteConfirmation(BuildContext context, EntryNotifier notifier) {
     final cs = Theme.of(context).colorScheme;
     showModalBottomSheet(
@@ -226,7 +604,8 @@ class _EntryScreenState extends ConsumerState<EntryScreen>
       ),
       builder: (context) {
         final mediaQuery = MediaQuery.of(context);
-        final bottomInset = mediaQuery.viewPadding.bottom + mediaQuery.viewInsets.bottom;
+        final bottomInset =
+            mediaQuery.viewPadding.bottom + mediaQuery.viewInsets.bottom;
 
         return Padding(
           padding: EdgeInsets.fromLTRB(

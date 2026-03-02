@@ -118,8 +118,6 @@ class _MonthScreenState extends ConsumerState<MonthScreen>
     final now = DateTime.now();
     final isCurrentMonth =
         state.month.year == now.year && state.month.month == now.month;
-    final currentMonthLabel =
-        isCurrentMonth ? 'This Month' : state.formattedMonth;
 
     return SafeArea(
       child: Column(
@@ -164,48 +162,14 @@ class _MonthScreenState extends ConsumerState<MonthScreen>
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-              ],
-            ),
-          ),
-
-          // ── Monthly Overview Header (fixed) ──
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              Spacing.xl,
-              Spacing.md,
-              Spacing.xl,
-              Spacing.xl,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Monthly Overview',
-                  style: theme.textTheme.headlineLarge?.copyWith(
-                    color: cs.primary,
-                    fontWeight: FontWeight.bold,
+                const Spacer(),
+                if (!isCurrentMonth)
+                  TextButton.icon(
+                    onPressed: () =>
+                        ref.read(monthProvider.notifier).goToCurrentMonth(),
+                    icon: const Icon(Icons.my_location_outlined, size: 18),
+                    label: const Text('This Month'),
                   ),
-                ),
-                const SizedBox(height: Spacing.sm),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      currentMonthLabel,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        color: cs.onSurfaceVariant,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    if (!isCurrentMonth)
-                      TextButton.icon(
-                        onPressed: () =>
-                            ref.read(monthProvider.notifier).goToCurrentMonth(),
-                        icon: const Icon(Icons.my_location_outlined, size: 18),
-                        label: const Text('Go to This Month'),
-                      ),
-                  ],
-                ),
               ],
             ),
           ),
@@ -527,7 +491,7 @@ class _SummaryCard extends StatelessWidget {
             theme: theme,
           ),
           _StatColumn(
-            value: insight.topActivity?.label ?? '—',
+            value: insight.topActivity ?? '—',
             label: 'Top Activity',
             theme: theme,
           ),
@@ -576,7 +540,7 @@ class _StatColumn extends StatelessWidget {
 
 // ── Mood Distribution ──────────────────────────────────────────────
 class _MoodDistribution extends StatelessWidget {
-  final Map<Mood, int> moods;
+  final Map<String, int> moods;
 
   const _MoodDistribution({required this.moods});
 
@@ -600,17 +564,21 @@ class _MoodDistribution extends StatelessWidget {
               horizontal: Spacing.xs,
             ),
             decoration: BoxDecoration(
-              color: Color(entry.key.colorHex).withValues(alpha: 0.15),
+              color: Color(moodColorHexForLabel(entry.key))
+                  .withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(AppRadius.md),
             ),
             child: Column(
               children: [
-                Text(entry.key.emoji, style: const TextStyle(fontSize: 20)),
+                Text(
+                  moodEmojiForLabel(entry.key),
+                  style: const TextStyle(fontSize: 20),
+                ),
                 const SizedBox(height: Spacing.xxs),
                 Text(
                   '${entry.value}',
                   style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                        color: Color(entry.key.colorHex),
+                        color: Color(moodColorHexForLabel(entry.key)),
                         fontWeight: FontWeight.w600,
                       ),
                 ),
@@ -625,7 +593,7 @@ class _MoodDistribution extends StatelessWidget {
 
 // ── Activity Chart ─────────────────────────────────────────────────
 class _ActivityChart extends StatelessWidget {
-  final Map<ActivityTag, int> tags;
+  final Map<String, int> tags;
 
   const _ActivityChart({required this.tags});
 
@@ -656,12 +624,12 @@ class _ActivityChart extends StatelessWidget {
                   width: 120,
                   child: Row(
                     children: [
-                      Text(entry.key.icon,
+                      Text(activityIconForLabel(entry.key),
                           style: const TextStyle(fontSize: 16)),
                       const SizedBox(width: Spacing.xs),
                       Flexible(
                         child: Text(
-                          entry.key.label,
+                          entry.key,
                           overflow: TextOverflow.ellipsis,
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: cs.onSurface,
