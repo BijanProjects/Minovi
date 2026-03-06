@@ -1,40 +1,47 @@
-import 'package:chronosense/domain/model/insight_report.dart';
-
 /// Abstract interface for on-device AI text generation.
 ///
-/// Implementations can use MediaPipe LLM Inference (Gemma), Google AI Edge,
-/// or any other on-device model. All data stays on the device.
+/// Implementations use MediaPipe LLM Inference (Gemma 2B) running
+/// entirely on the device — no data ever leaves the phone.
 abstract class OnDeviceAiService {
-  /// Whether the on-device model is available and ready.
+  /// Whether the on-device model is loaded and ready for inference.
   Future<bool> isAvailable();
 
-  /// Generate a natural-language insight report from structured analysis data.
-  ///
-  /// [structuredData] is a pre-built prompt containing the analysis results.
-  /// Returns the LLM-generated narrative text.
+  /// Generate a natural-language report from a structured prompt.
   Future<String> generateInsight(String structuredData);
 
-  /// Download / prepare the on-device model if not yet available.
-  /// Returns true if successful.
+  /// Start downloading + loading the model. Completes when the model
+  /// is ready (may take minutes on a slow connection). Watch
+  /// [downloadProgress] for real-time progress while this is running.
   Future<bool> prepareModel();
 
-  /// Current status of the model.
+  /// Cancel an in-progress download.
+  Future<void> cancelDownload();
+
+  /// Stream of download progress values in the range 0.0–1.0.
+  /// Emits nothing when no download is active.
+  Stream<double> get downloadProgress;
+
+  /// Current lifecycle status of the model.
   Future<AiModelStatus> getStatus();
 }
 
 enum AiModelStatus {
-  /// Model is not downloaded yet.
+  /// Model has never been downloaded.
   notDownloaded,
 
-  /// Model is being downloaded.
+  /// Model file is on disk but data is still transferring.
   downloading,
 
-  /// Model is ready to use.
+  /// Model file is present on disk (may or may not be loaded).
+  downloaded,
+
+  /// Model is loaded into memory and ready for inference.
   ready,
 
-  /// Device does not support on-device inference.
+  /// Device does not meet the hardware requirements.
   unsupported,
 
-  /// An error occurred.
+  /// Something went wrong.
   error,
 }
+

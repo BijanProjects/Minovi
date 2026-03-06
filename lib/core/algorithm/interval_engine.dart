@@ -125,7 +125,6 @@ class IntervalEngine {
       sleepMin: rawSleepMin,
     );
     final interval = prefs.intervalMinutes;
-    final nowMin = now.hour * 60 + now.minute;
 
     int boundary = wakeMin + interval;
     while (boundary <= sleepBoundary) {

@@ -205,8 +205,11 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen>
         _AiBadge(
           isLlmGenerated: report.isLlmGenerated,
           aiStatus: state.aiStatus,
+          downloadProgress: state.downloadProgress,
           onPrepare: () =>
               ref.read(insightsProvider.notifier).prepareModel(),
+          onCancel: () =>
+              ref.read(insightsProvider.notifier).cancelDownload(),
         ),
         const SizedBox(height: Spacing.lg),
 
@@ -332,12 +335,16 @@ class _DateRangeSelector extends StatelessWidget {
 class _AiBadge extends StatelessWidget {
   final bool isLlmGenerated;
   final AiModelStatus aiStatus;
+  final double? downloadProgress;
   final VoidCallback onPrepare;
+  final VoidCallback onCancel;
 
   const _AiBadge({
     required this.isLlmGenerated,
     required this.aiStatus,
     required this.onPrepare,
+    required this.onCancel,
+    this.downloadProgress,
   });
 
   @override
@@ -398,10 +405,34 @@ class _AiBadge extends StatelessWidget {
               ),
             ],
             if (aiStatus == AiModelStatus.downloading)
-              const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(
+                    width: 120,
+                    child: LinearProgressIndicator(
+                      value: downloadProgress,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    downloadProgress != null
+                        ? '${(downloadProgress! * 100).toStringAsFixed(0)}%'
+                        : 'Downloading…',
+                    style: Theme.of(context).textTheme.labelSmall,
+                  ),
+                  TextButton(
+                    onPressed: onCancel,
+                    style: TextButton.styleFrom(
+                      padding: EdgeInsets.zero,
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    child: const Text('Cancel'),
+                  ),
+                ],
               ),
           ],
         ),
