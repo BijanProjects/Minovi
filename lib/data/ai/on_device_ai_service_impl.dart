@@ -7,16 +7,25 @@ import 'package:chronosense/domain/service/on_device_ai_service.dart';
 /// MediaPipe LLM Inference API running a Gemma 2B model on-device.
 /// All data stays entirely on the device — nothing is sent to the cloud.
 class OnDeviceAiServiceImpl implements OnDeviceAiService {
-  static const _channel = MethodChannel('com.chronosense/on_device_ai');
+  static const _channel =
+      MethodChannel('com.chronosense/on_device_ai');
+  static const _progressChannel =
+      EventChannel('com.chronosense/on_device_ai_progress');
 
   OnDeviceAiServiceImpl._();
   static final OnDeviceAiServiceImpl instance = OnDeviceAiServiceImpl._();
 
   @override
+  Stream<double> get downloadProgress =>
+      _progressChannel
+          .receiveBroadcastStream()
+          .where((v) => v is double || v is int)
+          .map((v) => (v as num).toDouble());
+
+  @override
   Future<bool> isAvailable() async {
     try {
-      final result = await _channel.invokeMethod<bool>('isAvailable');
-      return result ?? false;
+      return await _channel.invokeMethod<bool>('isAvailable') ?? false;
     } on PlatformException {
       return false;
     } on MissingPluginException {
@@ -27,11 +36,11 @@ class OnDeviceAiServiceImpl implements OnDeviceAiService {
   @override
   Future<String> generateInsight(String structuredData) async {
     try {
-      final result = await _channel.invokeMethod<String>(
-        'generateInsight',
-        {'prompt': structuredData},
-      );
-      return result ?? '';
+      return await _channel.invokeMethod<String>(
+            'generateInsight',
+            {'prompt': structuredData},
+          ) ??
+          '';
     } on PlatformException catch (e) {
       throw Exception('On-device AI generation failed: ${e.message}');
     } on MissingPluginException {
@@ -42,8 +51,7 @@ class OnDeviceAiServiceImpl implements OnDeviceAiService {
   @override
   Future<bool> prepareModel() async {
     try {
-      final result = await _channel.invokeMethod<bool>('prepareModel');
-      return result ?? false;
+      return await _channel.invokeMethod<bool>('prepareModel') ?? false;
     } on PlatformException {
       return false;
     } on MissingPluginException {
@@ -52,15 +60,27 @@ class OnDeviceAiServiceImpl implements OnDeviceAiService {
   }
 
   @override
+  Future<void> cancelDownload() async {
+    try {
+      await _channel.invokeMethod<void>('cancelDownload');
+    } on PlatformException {
+      // ignore
+    } on MissingPluginException {
+      // ignore
+    }
+  }
+
+  @override
   Future<AiModelStatus> getStatus() async {
     try {
       final result = await _channel.invokeMethod<String>('getStatus');
       return switch (result) {
-        'ready' => AiModelStatus.ready,
-        'downloading' => AiModelStatus.downloading,
+        'ready'          => AiModelStatus.ready,
+        'downloading'    => AiModelStatus.downloading,
+        'downloaded'     => AiModelStatus.downloaded,
         'not_downloaded' => AiModelStatus.notDownloaded,
-        'unsupported' => AiModelStatus.unsupported,
-        _ => AiModelStatus.error,
+        'unsupported'    => AiModelStatus.unsupported,
+        _                => AiModelStatus.error,
       };
     } on PlatformException {
       return AiModelStatus.error;
