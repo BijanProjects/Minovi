@@ -327,6 +327,8 @@ class _DayScreenState extends ConsumerState<DayScreen>
                         return TimeSlotCard(
                           slot: slot,
                           index: index,
+                          moodEmojiMap: dayState.moodEmojiMap,
+                          actionEmojiMap: dayState.actionEmojiMap,
                           onTap: isCenter
                               ? () {
                                   final dateStr =

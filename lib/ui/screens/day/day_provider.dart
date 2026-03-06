@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:chronosense/core/algorithm/interval_engine.dart';
 import 'package:chronosense/core/di/providers.dart';
 import 'package:chronosense/core/di/refresh_signal.dart';
@@ -17,6 +18,8 @@ class DayUiState {
   final bool isLoading;
   final DayUiState? prevDay;
   final DayUiState? nextDay;
+  final Map<String, String> moodEmojiMap;
+  final Map<String, String> actionEmojiMap;
 
   DayUiState({
     this.formattedDate = '',
@@ -30,6 +33,8 @@ class DayUiState {
     this.isLoading = true,
     this.prevDay,
     this.nextDay,
+    this.moodEmojiMap = const {},
+    this.actionEmojiMap = const {},
   }) : date = date ?? DateTime.now();
 
   DayUiState copyWith({
@@ -42,6 +47,8 @@ class DayUiState {
     int? activeSlotIndex,
     bool? isToday,
     bool? isLoading,
+    Map<String, String>? moodEmojiMap,
+    Map<String, String>? actionEmojiMap,
   }) {
     return DayUiState(
       formattedDate: formattedDate ?? this.formattedDate,
@@ -55,6 +62,8 @@ class DayUiState {
       isLoading: isLoading ?? this.isLoading,
       prevDay: prevDay,
       nextDay: nextDay,
+      moodEmojiMap: moodEmojiMap ?? this.moodEmojiMap,
+      actionEmojiMap: actionEmojiMap ?? this.actionEmojiMap,
     );
   }
 }
@@ -62,6 +71,18 @@ class DayUiState {
 // ── Notifier ──
 class DayNotifier extends Notifier<DayUiState> {
   late DateTime _selectedDate;
+
+  static const _moodEmojiMapKey = 'entry_mood_emoji_map';
+  static const _actionEmojiMapKey = 'entry_action_emoji_map';
+
+  static Map<String, String> _parsePairs(List<String>? raw) {
+    final map = <String, String>{};
+    for (final item in raw ?? const []) {
+      final idx = item.indexOf(':::');
+      if (idx > 0) map[item.substring(0, idx)] = item.substring(idx + 3);
+    }
+    return map;
+  }
 
   @override
   DayUiState build() {
@@ -156,6 +177,10 @@ class DayNotifier extends Notifier<DayUiState> {
     final journalRepo = ref.read(journalRepositoryProvider);
     final prefs = await prefsRepo.getPreferences();
 
+    final sharedPrefs = await SharedPreferences.getInstance();
+    final moodEmojiMap = _parsePairs(sharedPrefs.getStringList(_moodEmojiMapKey));
+    final actionEmojiMap = _parsePairs(sharedPrefs.getStringList(_actionEmojiMapKey));
+
     final prevDate = _selectedDate.subtract(const Duration(days: 1));
     final nextDate = _selectedDate.add(const Duration(days: 1));
 
@@ -184,6 +209,8 @@ class DayNotifier extends Notifier<DayUiState> {
       isLoading: false,
       prevDay: prev,
       nextDay: next,
+      moodEmojiMap: moodEmojiMap,
+      actionEmojiMap: actionEmojiMap,
     );
   }
 

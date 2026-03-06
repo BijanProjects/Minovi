@@ -8,12 +8,16 @@ class TimeSlotCard extends StatelessWidget {
   final TimeSlot slot;
   final int index;
   final VoidCallback onTap;
+  final Map<String, String> moodEmojiMap;
+  final Map<String, String> actionEmojiMap;
 
   const TimeSlotCard({
     super.key,
     required this.slot,
     required this.index,
     required this.onTap,
+    this.moodEmojiMap = const {},
+    this.actionEmojiMap = const {},
   });
 
   @override
@@ -84,7 +88,10 @@ class TimeSlotCard extends StatelessWidget {
           children: [
             if (entry.moods.isNotEmpty) ...[
               Text(
-                entry.moods.map(moodEmojiForLabel).join(' '),
+                entry.moods.map((m) =>
+                    moodEmojiMap.containsKey(m)
+                        ? moodEmojiMap[m]!
+                        : moodEmojiForLabel(m)).join(' '),
                 style: theme.textTheme.titleLarge,
               ),
               const SizedBox(width: Spacing.sm),
@@ -122,24 +129,29 @@ class TimeSlotCard extends StatelessWidget {
       runSpacing: Spacing.xs,
       children: [
         ...displayTags.map(
-          (tag) => Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: Spacing.sm,
-              vertical: Spacing.xxs,
-            ),
-            decoration: BoxDecoration(
-              color:
-                  Color(activityColorHexForLabel(tag)).withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(AppRadius.pill),
-            ),
-            child: Text(
-              '${activityIconForLabel(tag)} $tag',
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: Color(activityColorHexForLabel(tag)),
-                fontWeight: FontWeight.w500,
+          (tag) {
+            final icon = actionEmojiMap.containsKey(tag)
+                ? actionEmojiMap[tag]!
+                : activityIconForLabel(tag);
+            return Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: Spacing.sm,
+                vertical: Spacing.xxs,
               ),
-            ),
-          ),
+              decoration: BoxDecoration(
+                color:
+                    Color(activityColorHexForLabel(tag)).withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(AppRadius.pill),
+              ),
+              child: Text(
+                '$icon $tag',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: Color(activityColorHexForLabel(tag)),
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            );
+          },
         ),
         if (overflow > 0)
           Container(
