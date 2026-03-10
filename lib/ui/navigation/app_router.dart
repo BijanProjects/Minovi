@@ -6,6 +6,7 @@ import 'package:chronosense/ui/screens/day/day_provider.dart';
 import 'package:chronosense/ui/screens/entry/entry_screen.dart';
 import 'package:chronosense/ui/screens/month/month_screen.dart';
 import 'package:chronosense/ui/screens/settings/settings_screen.dart';
+import 'package:chronosense/ui/screens/insights/insights_screen.dart';
 
 final navigatorKey = GlobalKey<NavigatorState>();
 
@@ -46,6 +47,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                   },
                 ),
               ),
+              transitionsBuilder: _fadeThrough,
+            ),
+          ),
+          GoRoute(
+            path: '/insights',
+            pageBuilder: (context, state) => CustomTransitionPage(
+              key: state.pageKey,
+              child: const InsightsScreen(),
               transitionsBuilder: _fadeThrough,
             ),
           ),
@@ -172,6 +181,12 @@ class _AppShell extends StatelessWidget {
       label: 'Month',
       iconFilled: Icons.calendar_month,
       iconOutlined: Icons.calendar_month_outlined
+    ),
+    (
+      path: '/insights',
+      label: 'Insights',
+      iconFilled: Icons.auto_awesome,
+      iconOutlined: Icons.auto_awesome_outlined
     ),
     (
       path: '/settings',

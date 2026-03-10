@@ -40,4 +40,8 @@ flutter {
 
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
+
+    // MediaPipe on-device LLM inference (Gemma / Gemma 2, Phi-3, Falcon, etc.)
+    // All inference runs locally — no data leaves the device.
+    implementation("com.google.mediapipe:tasks-genai:0.10.22")
 }
